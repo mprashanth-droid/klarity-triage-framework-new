@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klarity Architect — Issue Triage Framework v4</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --nightfall:   #000e4f;
+    --ocean:       #488cff;
+    --poppy:       #e87937;
+    --clay:        #ae5833;
+    --sky:         #afccfd;
+    --light-sky:   #e7eef8;
+    --light-sky20: #eff2f7;
+    --yellow:      #f5c253;
+    --cloud:       #fffcf6;
+    --black:       #0f131b;
+    --white:       #ffffff;
+    --muted:       #6b7280;
+    --border:      #dde3ef;
+    --green-bg: #d1fae5; --green-txt: #065f46;
+    --amber-bg: #fef3c7; --amber-txt: #92400e;
+    --red-bg:   #fee2e2; --red-txt:   #991b1b;
+    --blue-bg:  #dbeafe; --blue-txt:  #1e40af;
+    --purple-bg:#ede9fe; --purple-txt:#5b21b6;
+    --g-op: #dc2626; --g-op-l: #fef2f2;
+    --g-ai: #7c3aed; --g-ai-l: #f5f3ff;
+    --g-file: #d97706; --g-file-l: #fffbeb;
+    --g-auth: #0284c7; --g-auth-l: #f0f9ff;
+    --g-prod: #059669; --g-prod-l: #ecfdf5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--cloud); color: var(--black);
+    font-size: 13.5px; line-height: 1.55;
+  }
+
+  /* —— HEADER —— */
+  .header {
+    background: var(--nightfall); color: var(--white);
+    position: relative; overflow: hidden;
+  }
+  .header-wave {
+    position: absolute; top: 0; right: 0;
+    width: 55%; height: 100%;
+    background: linear-gradient(135deg, var(--nightfall) 0%, #1a2a7a 40%, #c06a3a 75%, var(--poppy) 100%);
+    clip-path: polygon(18% 0%, 100% 0%, 100% 100%, 0% 100%);
+    opacity: 0.7;
+  }
+  .header-inner {
+    position: relative; z-index: 2;
+    max-width: 1360px; margin: 0 auto;
+    padding: 24px 40px 18px;
+    display: flex; align-items: center; gap: 20px;
+  }
+  .k-logo { width: 44px; height: 44px; flex-shrink: 0; }
+  .header-text h1 { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+  .header-text p { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+  .header-pills {
+    margin-left: auto;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;
+  }
+  .pill {
+    padding: 3px 11px; border-radius: 20px; font-size: 10.5px; font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.1); white-space: nowrap;
+  }
+  .pill.orange { background: var(--poppy); border-color: var(--poppy); color: white; }
+
+  /* —— NAV TABS —— */
+  .nav-bar {
+    background: var(--nightfall);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    overflow-x: auto;
+  }
+  .nav-bar-inner {
+    max-width: 1360px; margin: 0 auto;
+    padding: 0 40px; display: flex; gap: 2px;
+  }
+  .tab {
+    padding: 9px 14px; font-size: 11.5px; font-weight: 600;
+    color: rgba(255,255,255,0.5); cursor: pointer;
+    border-radius: 6px 6px 0 0; border: 1px solid transparent;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .tab:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.06); }
+  .tab.active {
+    color: var(--white); background: var(--cloud);
+    border-color: var(--border) var(--border) var(--cloud);
+  }
+
+  /* —— PANELS —— */
+  .panels { max-width: 1360px; margin: 0 auto; padding: 28px 40px 60px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .panel-title {
+    font-size: 20px; font-weight: 800; color: var(--nightfall);
+    margin-bottom: 4px; letter-spacing: -0.3px;
+  }
+  .panel-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 24px; }
+
+  /* —— SEARCH BAR —— */
+  .search-wrap {
+    margin-bottom: 20px; position: relative;
+  }
+  .search-wrap input {
+    width: 100%; padding: 10px 16px 10px 38px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 13px; background: var(--white);
+    outline: none; transition: border 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--ocean); }
+  .search-wrap::before {
+    content: '🔍'; position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%); font-size: 14px; opacity: 0.5;
+  }
+
+  /* —— ISSUE GROUP CARDS —— */
+  .group-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 16px; overflow: hidden;
+    transition: box-shadow 0.15s;
+  }
+  .group-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .group-header {
+    padding: 16px 20px; cursor: pointer;
+    display: flex; align-items: center; gap: 14px;
+    user-select: none;
+  }
+  .group-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .group-header h3 { font-size: 14.5px; font-weight: 700; flex: 1; }
+  .group-header .count {
+    font-size: 11px; font-weight: 700; padding: 2px 10px;
+    border-radius: 12px; white-space: nowrap;
+  }
+  .group-chevron {
+    font-size: 14px; color: var(--muted); transition: transform 0.2s;
+  }
+  .group-card.open .group-chevron { transform: rotate(90deg); }
+  .group-body { display: none; padding: 0 20px 16px; }
+  .group-card.open .group-body { display: block; }
+
+  /* —— SUB-ISSUE ROW —— */
+  .sub-issue {
+    padding: 14px 16px; border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 8px; background: var(--cloud);
+    cursor: pointer; transition: background 0.12s;
+  }
+  .sub-issue:hover { background: var(--light-sky20); }
+  .sub-issue.expanded { background: var(--white); border-color: var(--ocean); }
+  .sub-header {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sub-header .sub-name { font-weight: 600; font-size: 13px; flex: 1; }
+  .sev-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    white-space: nowrap;
+  }
+  .sev-high { background: var(--red-bg); color: var(--red-txt); }
+  .sev-med  { background: var(--amber-bg); color: var(--amber-txt); }
+  .sev-low  { background: var(--green-bg); color: var(--green-txt); }
+  .sub-detail { display: none; margin-top: 12px; font-size: 12.5px; line-height: 1.65; color: #374151; }
+  .sub-issue.expanded .sub-detail { display: block; }
+  .sub-detail p { margin-bottom: 8px; }
+  .sub-detail strong { color: var(--black); }
+  .sub-detail .error-code {
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11.5px;
+    background: #f3f4f6; padding: 6px 10px; border-radius: 6px;
+    display: block; margin: 6px 0; color: #7f1d1d; word-break: break-all;
+  }
+  .sub-detail .evidence {
+    background: #eff6ff; border-left: 3px solid var(--ocean);
+    padding: 8px 12px; border-radius: 0 6px 6px 0;
+    margin: 8px 0; font-size: 12px;
+  }
+  .affected-ops {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+  }
+  .op-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 8px;
+    background: var(--blue-bg); color: var(--blue-txt); font-weight: 600;
+  }
+
+  /* —— ERROR CODE TABLE —— */
+  .err-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+  .err-table thead th {
+    background: var(--nightfall); color: var(--white);
+    padding: 10px 14px; text-align: left; font-weight: 600; font-size: 11.5px;
+    position: sticky; top: 0; z-index: 2;
+  }
+  .err-table thead th:first-child { border-radius: 8px 0 0 0; }
+  .err-table thead th:last-child { border-radius: 0 8px 0 0; }
+  .err-table tbody td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .err-table tbody tr:hover { background: #f0f5ff; }
+  .err-table .err-raw {
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px;
+    color: #991b1b; word-break: break-word; max-width: 360px;
+  }
+  .err-table .err-id { font-weight: 700; color: var(--nightfall); white-space: nowrap; }
+  .table-wrap {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 12px; overflow: auto; max-height: 72vh;
+  }
+
+  /* —— DECISION TREE —— */
+  .tree-step {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 12px;
+    position: relative;
+  }
+  .tree-step::before {
+    content: ''; position: absolute; left: 30px; top: -12px;
+    width: 2px; height: 12px; background: var(--border);
+  }
+  .tree-step:first-child::before { display: none; }
+  .tree-step h4 { font-size: 13.5px; font-weight: 700; color: var(--nightfall); margin-bottom: 6px; }
+  .tree-step p { font-size: 12.5px; color: #374151; }
+  .tree-branch {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;
+  }
+  .branch-opt {
+    padding: 10px 14px; border-radius: 8px; font-size: 12px;
+    font-weight: 600; cursor: default;
+  }
+  .branch-yes { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+  .branch-no  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .branch-esc { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+  .tree-connector { text-align: center; padding: 4px; color: var(--muted); font-size: 18px; }
+
+  /* —— INTAKE FORM —— */
+  .intake-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px; margin-bottom: 14px;
+  }
+  .intake-card h4 {
+    font-size: 13.5px; font-weight: 700; color: var(--nightfall); margin-bottom: 10px;
+  }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 5px 0; font-size: 12.5px;
+  }
+  .check-item input[type="checkbox"] {
+    margin-top: 3px; accent-color: var(--ocean);
+  }
+
+  /* —— PLAYBOOK —— */
+  .playbook-section {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px; margin-bottom: 16px;
+  }
+  .playbook-section h4 {
+    font-size: 14px; font-weight: 700; color: var(--nightfall); margin-bottom: 10px;
+  }
+  .playbook-section p, .playbook-section li {
+    font-size: 12.5px; color: #374151; line-height: 1.65;
+  }
+  .playbook-section ul { padding-left: 18px; margin-top: 6px; }
+  .playbook-section li { margin-bottom: 4px; }
+  .failure-table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 10px; }
+  .failure-table th {
+    background: var(--g-auth); color: white; padding: 8px 12px;
+    text-align: left; font-size: 11px; font-weight: 600;
+  }
+  .failure-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .failure-table tr:hover { background: #f0f9ff; }
+  .freq-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 8px;
+    display: inline-block;
+  }
+
+  /* —— INCIDENT LOG —— */
+  .log-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+  .log-table thead th {
+    background: var(--nightfall); color: var(--white);
+    padding: 9px 12px; text-align: left; font-weight: 600; font-size: 11px;
+    position: sticky; top: 0;
+  }
+  .log-table thead th:first-child { border-radius: 8px 0 0 0; }
+  .log-table thead th:last-child { border-radius: 0 8px 0 0; }
+  .log-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .log-table tbody tr:hover { background: #f0f5ff; }
+
+  /* —— GLOSSARY —— */
+  .gloss-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 20px; margin-bottom: 10px;
+  }
+  .gloss-card h4 { font-size: 13.5px; font-weight: 700; color: var(--nightfall); margin-bottom: 4px; }
+  .gloss-card p { font-size: 12.5px; color: #374151; }
+
+  /* —— RESOURCES —— */
+  .res-group {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 22px; margin-bottom: 14px;
+  }
+  .res-group h4 {
+    font-size: 13.5px; font-weight: 700; color: var(--nightfall); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .res-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; font-size: 12.5px; border-bottom: 1px solid #f3f4f6;
+  }
+  .res-link:last-child { border-bottom: none; }
+  .res-link a {
+    color: var(--ocean); text-decoration: none; font-weight: 500;
+  }
+  .res-link a:hover { text-decoration: underline; }
+  .res-link .res-type {
+    font-size: 10px; padding: 2px 7px; border-radius: 6px;
+    font-weight: 600; white-space: nowrap;
+  }
+  .rt-slack   { background: #fce7f3; color: #9d174d; }
+  .rt-zendesk { background: #dbeafe; color: #1e40af; }
+  .rt-gdoc    { background: #d1fae5; color: #065f46; }
+  .rt-gsheet  { background: #ecfdf5; color: #047857; }
+  .rt-figma   { background: #ede9fe; color: #5b21b6; }
+  .rt-loom    { background: #fef3c7; color: #92400e; }
+  .rt-linear  { background: #f3f4f6; color: #374151; }
+
+  /* —— PREDICTED ISSUES —— */
+  .predicted-card {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1px solid #fde68a; border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 10px;
+  }
+  .predicted-card h5 { font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 4px; }
+  .predicted-card p { font-size: 12px; color: #78350f; }
+
+  /* —— UTILITIES —— */
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  @media (max-width: 800px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .header-inner { flex-direction: column; align-items: flex-start; padding: 16px 20px; }
+    .header-pills { margin-left: 0; }
+    .nav-bar-inner { padding: 0 16px; }
+    .panels { padding: 16px 20px 40px; }
+    .tree-branch { grid-template-columns: 1fr; }
+  }
+  .highlight { background: #fef08a; padding: 0 2px; border-radius: 2px; }
+  .section-divider {
+    border: none; border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+  .tip-box {
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+    padding: 12px 16px; font-size: 12px; color: #166534; margin: 12px 0;
+  }
+  .warn-box {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 12px 16px; font-size: 12px; color: #92400e; margin: 12px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ████ HEADER ████ -->
+<div class="header">
+  <div class="header-wave"></div>
+  <div class="header-inner">
+    <svg class="k-logo" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="#fff"/><text x="8" y="35" font-family="Inter,sans-serif" font-weight="800" font-size="28" fill="#000e4f">K</text></svg>
+    <div class="header-text">
+      <h1>Klarity Architect — Issue Triage Framework</h1>
+      <p>5 Issue Groups · 35 Sub-Issues · Source: Slack, Zendesk, Engineering · Jan–Apr 2026</p>
+    </div>
+    <div class="header-pills">
+      <span class="pill">v4.0</span>
+      <span class="pill">All Teams: CX · VD · Eng · GTM</span>
+      <span class="pill orange">Last Updated: Apr 17, 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- ████ NAV ████ -->
+<div class="nav-bar">
+  <div class="nav-bar-inner">
+    <div class="tab active" onclick="showPanel('taxonomy')">Issue Taxonomy</div>
+    <div class="tab" onclick="showPanel('tree')">Decision Tree</div>
+    <div class="tab" onclick="showPanel('errors')">Error Codes</div>
+    <div class="tab" onclick="showPanel('intake')">Ticket Intake</div>
+    <div class="tab" onclick="showPanel('playbook')">Access &amp; Auth Playbook</div>
+    <div class="tab" onclick="showPanel('incidents')">Incident Log</div>
+    <div class="tab" onclick="showPanel('glossary')">Feature Glossary</div>
+    <div class="tab" onclick="showPanel('resources')">Resources</div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████████████████
+     TAB 1 — ISSUE TAXONOMY
+     ████████████████████████████████████████████████████████████████████ -->
+<div class="panels">
+<div class="panel active" id="panel-taxonomy">
+  <div class="panel-title">Issue Taxonomy</div>
+  <div class="panel-sub">5 issue groups, 35 sub-issues. Click any group to expand, then click a sub-issue for full details. Data sourced from #architect-bugs-and-issues, #ka-failed-operations, and Zendesk (Jan–Apr 2026).</div>
+
+  <div class="search-wrap"><input type="text" id="tax-search" placeholder="Search issues, errors, customers…" oninput="filterTaxonomy()"></div>
+
+  <!-- ── GROUP 1: OPERATION FAILURES ── -->
+  <div class="group-card" data-group="op">
+    <div class="group-header" onclick="toggleGroup(this)">
+      <div class="group-icon" style="background:var(--g-op-l);color:var(--g-op);">⚡</div>
+      <h3>Operation Failures</h3>
+      <span class="count" style="background:var(--g-op-l);color:var(--g-op);">7 sub-issues</span>
+      <span class="group-chevron">▸</span>
+    </div>
+    <div class="group-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Operation triggered but stopped before producing output, or ran below expected performance.</p>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">AI Provider Unavailability &amp; Rate Limits</span>
+          <span class="sev-tag sev-high">Very High</span>
+        </div>
+        <div class="sub-detail">
+          <p>An AI provider (Anthropic/Claude, Google/Gemini, or OpenAI/GPT) was unreachable or rejecting requests due to concurrent volume. Provider downtime affects all operation types.</p>
+          <span class="error-code">All models exhausted after N attempts · 429 Resource Exhausted — Vertex AI / Anthropic</span>
+          <p><strong>Sub-variants:</strong> Claude down (very high), Gemini down (medium — Export Process only), AI Interviewer unavailable (low-medium — requires both Claude + GPT down), AI request timed out (low-medium).</p>
+          <div class="evidence">Confirmed: Multiple customers Jan 27–28 (rate limit wave), KLA Export Jan 21, Google Finance R2R, EY training video Mar 3. Abhinav: "Gemini model is down." Saideep: "Claude had a downtime."</div>
+          <div class="affected-ops">
+            <span class="op-tag">All Operations</span>
+            <span class="op-tag">Export Process → Gemini</span>
+            <span class="op-tag">AI Interviewer → Claude+GPT</span>
+          </div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Wait for provider to recover, re-run. Check status.anthropic.com / Google Cloud status. Spread operations out to avoid rate limits.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Execution Timeout</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Operation exceeded the ~90-minute run limit. Root cause is typically a misconfigured output token cap (e.g. set to 8,192) causing the model to retry indefinitely.</p>
+          <div class="evidence">Confirmed: Google Finance R2R (Feb 26), EY training video (Mar 3).</div>
+          <div class="affected-ops">
+            <span class="op-tag">Process Capture</span><span class="op-tag">Generate Document</span>
+          </div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Engineering to check token cap config. Re-run after fix.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Token / Context Limit Exceeded</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Uploaded file converts to more text than the model's context window allows (over 950,000 tokens). Files can appear small but still exceed limits — a dense Excel with many rows or a bundled PDF are common triggers.</p>
+          <span class="error-code">TokenLimitException: N tokens in input, but max input tokens is 950000 · Max tokens exceeded during tool use, arguments were truncated</span>
+          <div class="evidence">Confirmed: KLA UDC Invoice Mar 17 (Kimball: "context limit issue, a fix has been pushed"), Google Finance R2R Feb 26–27.</div>
+          <div class="affected-ops">
+            <span class="op-tag">Update Document</span><span class="op-tag">Generate Document</span><span class="op-tag">Process Capture</span>
+          </div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Customer to split document into smaller sections. Engineering to review chunking options.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Infrastructure Concurrency Failure</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Backend failure from too many operations running simultaneously — either a database key conflict (race condition) or the DB running out of connection slots.</p>
+          <span class="error-code">UniqueViolation: duplicate key value violates unique constraint artifact_input_artifacts_pkey · QueuePool limit of size 10 overflow 25 reached</span>
+          <div class="evidence">Confirmed: Tyler Tech POV Feb 19 (Kimball: "race condition"). Write conflict fix deployed Feb 19. DB pool: Linear CUS-195.</div>
+          <div class="affected-ops"><span class="op-tag">All Operations (system-wide)</span></div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Race condition fix deployed. DB pool — engineering to increase pool size. Advise customers not to upload multiple docs simultaneously.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Operation Initiation Failure</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>The run never started — no output, no error shown to the customer. Applies to any operation type. Typically a workspace configuration or provisioning issue on the backend.</p>
+          <div class="affected-ops"><span class="op-tag">All Operations</span></div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Escalate to Engineering. Check workspace provisioning status.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Platform Performance Degradation</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Platform-wide slowness — operations take longer than expected, session success rates drop, or Companion/Interviewer response times are noticeably degraded. Distinct from a full outage: the platform is running but underperforming.</p>
+          <div class="evidence">Confirmed: Astera Labs lag, KKR POV (1 in 12 sessions succeeding), AI Interview lag across multiple workspaces.</div>
+          <div class="affected-ops"><span class="op-tag">All Operations</span></div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Escalate to Engineering with timestamps. Check if coincides with AI provider degradation.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Interviewer Audio Input Failure</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Microphone or audio is not functioning during an AI Interviewer or Companion session — the system cannot hear the user, mic permissions were reset mid-session, audio is not transmitted over Teams/Zoom screen share.</p>
+          <div class="evidence">Confirmed: AAK (ZD Mar 2), multiple Teams screen-share users, UMB and EDF demo sessions.</div>
+          <div class="affected-ops"><span class="op-tag">AI Interviewer</span><span class="op-tag">Companion</span></div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Check browser mic permissions, ensure not using Teams/Zoom audio passthrough. Restart session.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GROUP 2: AI OUTPUT QUALITY ── -->
+  <div class="group-card" data-group="ai">
+    <div class="group-header" onclick="toggleGroup(this)">
+      <div class="group-icon" style="background:var(--g-ai-l);color:var(--g-ai);">🧠</div>
+      <h3>AI Output Quality</h3>
+      <span class="count" style="background:var(--g-ai-l);color:var(--g-ai);">8 sub-issues</span>
+      <span class="group-chevron">▸</span>
+    </div>
+    <div class="group-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">The operation completed, but what the AI generated is wrong, inconsistent, or incomplete.</p>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Content Hallucination</span>
+          <span class="sev-tag sev-high">High</span>
+        </div>
+        <div class="sub-detail">
+          <p>AI produced factually incorrect, fabricated, or contextually irrelevant content in a process capture, SOP narrative, or Advisor recommendation. Common when source material is ambiguous, too long, or of poor quality.</p>
+          <div class="evidence">Confirmed: EDF (random info pulled into output), PubMatic (inconsistent employee designations), Aven Hospitality AI Interviewer Q&A.</div>
+          <div class="affected-ops"><span class="op-tag">Process Capture</span><span class="op-tag">Generate Document</span><span class="op-tag">Advisor</span><span class="op-tag">Coach</span></div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Customer to review output and re-run with clearer source material. Escalate persistent cases to Engineering.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">AI Reference Hallucination (Section ID / Resource Key)</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>AI invented an identifier that does not exist in the workspace — a section ID during the critique step (e.g. "section_one" instead of "1") or a diagram node resource key.</p>
+          <span class="error-code">No section found with name section_one · NotFoundException: Process with resource key XXXX not found in workspace YYY</span>
+          <div class="evidence">Confirmed: Mar 22 (section ID — Satyendra: "this is LLM hallucination"), Mar 2 (resource key).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Re-run operation. Engineering investigating prompt tuning for section ID format.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Process Flow Diagram Failure</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Generated process diagram has incorrect layout, overlapping swim lanes, missing or extra nodes, or a Mermaid syntax error preventing rendering. Operation may show as successful while the diagram is absent or malformed.</p>
+          <div class="evidence">Confirmed: Larvin V ticket (Mar 20).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Re-run diagram generation. Report swim lane configuration issues to Engineering.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Document Export Discrepancy</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Content visible in the Architect UI differs from what is produced in the exported document — data missing from PDF tables, blue formatting lines in Word exports, incorrect content rendering.</p>
+          <div class="evidence">Confirmed: McKesson Advisor Export (ARC-4920, Mar 11), PubMatic blue lines in narrative (ZD #11403, Mar 24).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Escalate to Engineering with exported file and screenshot of UI content.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Incomplete Operation Output</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Output was produced but is incomplete — sections missing, content cut off, or document ends abruptly. Also covers operations that show as completed in the UI but produce no artifact.</p>
+          <div class="evidence">Confirmed: Multiple "Operations showing complete but not producing anything" tickets (Mar 17).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Re-run. If persistent, escalate to Engineering with operation ID.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Interviewer Response Not Captured</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>AI Interviewer session ran but responses were not correctly recorded — responses appear empty, are mis-attributed, or the AI made transcription errors (e.g. accent misrecognition).</p>
+          <div class="evidence">Confirmed: South Asian accent errors (ZD #11 Mar 18), AI Interview getting words wrong (ZERO vs ZFRO).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Re-run interview. For accent issues, recommend clear audio input.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Process Step Screenshot Failure</span>
+          <span class="sev-tag sev-high">High</span>
+        </div>
+        <div class="sub-detail">
+          <p>Companion or Interviewer session completed but process steps are missing screenshots — none were extracted, or incorrect screenshots captured (e.g. Klarity's own UI instead of customer's workflow).</p>
+          <div class="evidence">Confirmed: AAK (multiple tickets), Forvis Mazars, ServiceNow, Presidio, Keysight — 8+ tickets across 6+ customers.</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Escalate to Engineering. Known issue across multiple customers.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Non-Deterministic Output</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Re-running the same operation produces noticeably different results each time. This is expected LLM behavior — the model introduces natural variation across runs.</p>
+          <p style="margin-top:8px;"><strong>Talk Track:</strong> "This is how AI models work — they generate text probabilistically. Each run is unique. The best approach is to run the operation, review the output, and use the editing tools to refine."</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GROUP 3: FILE & TEMPLATE ERRORS ── -->
+  <div class="group-card" data-group="file">
+    <div class="group-header" onclick="toggleGroup(this)">
+      <div class="group-icon" style="background:var(--g-file-l);color:var(--g-file);">📁</div>
+      <h3>File &amp; Template Errors</h3>
+      <span class="count" style="background:var(--g-file-l);color:var(--g-file);">8 sub-issues</span>
+      <span class="group-chevron">▸</span>
+    </div>
+    <div class="group-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">The source file, upload, or template is the problem — not what the AI produced, but what it was given to work with.</p>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">File Size Limit Exceeded</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>File is too large to process — at upload (input) or when saving generated output. Input: large video recordings (2.5 GB+) and dense Excel files. Output: AWS S3 max size.</p>
+          <span class="error-code">Chat failed: Your files are too large for us to process · EntityTooLarge: Your proposed upload exceeds the maximum allowed size</span>
+          <div class="evidence">Confirmed: JLL India Commission (input), Ripple Pro Service Accruals (output).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Customer to compress or split file. For output errors, escalate to Engineering.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Unsupported File Format</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Architect could not open or parse the uploaded file — unsupported format, password-protected, or corrupted. Supported: .docx, .xlsx, .pdf (unencrypted).</p>
+          <span class="error-code">KlarityException: Cannot parse artifact XXXXX</span>
+          <div class="evidence">Confirmed: Ripple OTC Revenue, Presidio workspace (Feb 23).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Customer to re-export as PDF or supported format. Remove password protection.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">File Preprocessing Timeout / OCR Corruption</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>File entered the pipeline but failed before being ready — either preprocessing timeout (40+ min) or OCR corruption (null characters in scanned PDFs).</p>
+          <span class="error-code">TimeoutError: Timeout waiting for artifact XXXXX · Null characters from OCR causing DB insert failure</span>
+          <div class="evidence">Confirmed: UMB Mapping (40 min), Google PDF (Feb 13). OCR fix deployed Feb 13.</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Check file integrity, re-upload. OCR fix deployed Feb 13.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Spreadsheet Layout Not Recognized</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Excel file layout didn't match expectations — wrong column positions, missing headers, or extra blank rows.</p>
+          <span class="error-code">IndexError: single positional indexer is out-of-bounds (excel_service.py)</span>
+          <div class="evidence">Confirmed: Genpact Spreadsheet.</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Customer to clean up spreadsheet format. Escalate to Engineering.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Output File Too Large to Save</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Operation completed successfully but the generated output was too large to upload to AWS S3.</p>
+          <span class="error-code">EntityTooLarge: PutObject exceeds maximum allowed size</span>
+          <div class="evidence">Confirmed: Ripple Pro Service Accruals (30 min).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Escalate to Engineering. Output size limits may need adjustment.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Export Template Misconfigured</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Export Process failed because the template references a section that doesn't exist in the customer's workspace.</p>
+          <span class="error-code">No section in template with ID section_one</span>
+          <div class="evidence">Confirmed: AAK Shipment Cost (Mar 19), Uber-Logistics template inconsistency (ZD #11306, Mar 23).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Update export template to match workspace process structure.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Missing Process Node</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Operation tried to access a process step or hierarchy node that no longer exists — deleted, renamed, or never configured.</p>
+          <span class="error-code">NotFoundException: Process not found in workspace · Hierarchy node not found in workspace</span>
+          <div class="evidence">Confirmed: Aven Hospitality (Feb 26), ServiceNow Deloitte forecast.</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Restore or recreate the missing node. Re-run.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">FFmpeg / Video Conversion Failure</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Server couldn't convert session recording from WebM to MP4. Usually a corrupted recording or codec issue.</p>
+          <span class="error-code">RuntimeError: FFmpeg conversion failed! See logs for details.</span>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Customer to restart session and try again. Escalate to Engineering with session timestamp.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GROUP 4: ACCESS & AUTHENTICATION ── -->
+  <div class="group-card" data-group="auth">
+    <div class="group-header" onclick="toggleGroup(this)">
+      <div class="group-icon" style="background:var(--g-auth-l);color:var(--g-auth);">🔐</div>
+      <h3>Access &amp; Authentication</h3>
+      <span class="count" style="background:var(--g-auth-l);color:var(--g-auth);">7 sub-issues</span>
+      <span class="group-chevron">▸</span>
+    </div>
+    <div class="group-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Customer cannot log in, cannot provision team members, or workspace access is not working as expected. See the <a href="#" onclick="event.stopPropagation();showPanel('playbook');" style="color:var(--ocean);">Access &amp; Auth Playbook tab</a> for detailed troubleshooting flows.</p>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Workspace Not Provisioned</span>
+          <span class="sev-tag sev-high">High (Blocker)</span>
+        </div>
+        <div class="sub-detail">
+          <p>A new customer or user cannot access their Architect workspace — no workspace exists for them yet. Blocks all other work until provisioning is complete.</p>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Submit internal work request for provisioning. Typical turnaround: same day.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">SSO / OIDC Integration Failure</span>
+          <span class="sev-tag sev-high">High</span>
+        </div>
+        <div class="sub-detail">
+          <p>Domain-wide authentication failure — all users in the customer domain unable to log in. OIDC integration errors, expired client secrets, misconfigured redirect URIs.</p>
+          <div class="evidence">Confirmed: McKesson Okta migration (Mar 12), ZD #10731.</div>
+          <p style="margin-top:8px;"><strong>Key Gotchas:</strong> Okta client secrets expire after set period. Redirect URIs must exactly match. Token endpoint auth method must be "client_secret_post". See Playbook tab for full Okta/Azure AD troubleshooting.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Authentication Loop</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>User logs in successfully but is immediately signed out and redirected to the login screen in a loop. Typically caused by session token expiry or SSO configuration mismatch.</p>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Clear browser cookies for app.klarity.com. Check Chrome → Settings → Privacy → "Allow all cookies" (or whitelist Klarity). If SSO, verify the OIDC config with the customer's IT team.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">SSO &amp; Magic Auth Issues (Individual User)</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Individual user login failures: SSO access denied, Magic Auth link not arriving or expired, email case sensitivity mismatch.</p>
+          <div class="evidence">Confirmed: Magic Link case sensitivity (Mar 20), ZD #10731.</div>
+          <p style="margin-top:8px;"><strong>Magic Auth common fixes:</strong> Check spam/junk, verify email matches exactly (case-sensitive), link expires in 10 min, must use same browser where link was requested. See Playbook tab.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">User Provisioning &amp; RBAC</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Workspace admin cannot invite new users, or role/permission changes not taking effect after being saved.</p>
+          <div class="evidence">Confirmed: UMB users seeing both Architect and Automate on Okta (Feb 26), multiple account activation requests.</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Check Okta app assignments. For RBAC, clear cache and re-save permissions. Escalate to Engineering if persists.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Account Locked / Deactivated</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>User account is locked out, deactivated, or showing as inactive, preventing access. May be due to IdP JIT provisioning failure.</p>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Check user status in Architect MiniApp. Reactivate if needed. Verify IdP is sending correct user attributes.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Interview Invite Delivery Failure</span>
+          <span class="sev-tag sev-high">High</span>
+        </div>
+        <div class="sub-detail">
+          <p>Errors when dispatching bulk AI Interviewer invitations — invite emails fail to send, recipients don't receive them, or sender has no visibility into delivery status.</p>
+          <div class="evidence">Confirmed: UMB (URGENT — ZD Feb 28), KLA pilot (Feb 24).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Escalate to Engineering immediately. Check email delivery logs. Verify recipient email addresses.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GROUP 5: PRODUCT & ENVIRONMENT FAILURES ── -->
+  <div class="group-card" data-group="prod">
+    <div class="group-header" onclick="toggleGroup(this)">
+      <div class="group-icon" style="background:var(--g-prod-l);color:var(--g-prod);">🖥️</div>
+      <h3>Product &amp; Environment Failures</h3>
+      <span class="count" style="background:var(--g-prod-l);color:var(--g-prod);">11 sub-issues</span>
+      <span class="group-chevron">▸</span>
+    </div>
+    <div class="group-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">The Architect workspace or a product feature is not behaving correctly — data not surfacing, features unresponsive, or the environment in an inconsistent state.</p>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Process Index Visibility Failure</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Content that exists on the backend is not surfacing in the Process Index — completed sessions don't appear in search, uploaded files have disappeared. Re-running typically triggers re-indexing.</p>
+          <div class="evidence">Confirmed: Freshworks (ZD #11004), Ardent Mills (ZD #11127), Sessions Contributed tab issues (Mar 14–16).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Re-run the operation to trigger re-indexing. If persistent, escalate to Engineering.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Process Hierarchy Mismatch</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Processes appear in the wrong place in the hierarchy, nodes ordered incorrectly, or Companion session updated the wrong parent node.</p>
+          <div class="evidence">Confirmed: ZD #10663, Weird Ordering of Index Nodes (Mar 19), KLA Coach contribution not categorized (Mar 17).</div>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Signals / Insights Dashboard Not Loading</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Insights dashboard is empty or showing errors despite data being present.</p>
+          <div class="evidence">Confirmed: ZD #10714, #10718, Insights Table Formatting Issue (Feb 20).</div>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Companion Session Failure</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Companion chat not loading, not responding, or producing no process output after a full session. May be caused by stale browser session or backend restart.</p>
+          <div class="evidence">Confirmed: Linear ARC-5111 (Mar 24), Coach not working (Feb 25), multiple unresponsive session reports.</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Hard refresh browser. Clear cache. If unresolved, escalate with session ID.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Process Step Save Failure (Network Error)</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Edits to process steps not being saved. Save appears to complete in UI but backend write fails silently; changes lost on refresh.</p>
+          <div class="evidence">Confirmed: KLA-SP11 (Mar 10), Aven Hospitality (ZD #10615, Mar 3), AAK Network Error (Feb 26).</div>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Post-Migration Workspace Failure</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>After workspace/product migration, operations fail, files inaccessible, or configs don't apply correctly. Workspace may be on older config post-migration.</p>
+          <div class="evidence">Confirmed: JLL post-migration (ARC-4965, ZD — Mar 17), V2 hierarchy export failure (Mar 13).</div>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">UI Status / Progress Inaccuracy</span>
+          <span class="sev-tag sev-low">Low</span>
+        </div>
+        <div class="sub-detail">
+          <p>Interface communicates incorrect state — no status indicator while operation runs, incorrect error messages, or inaccurate progress percentage.</p>
+          <div class="evidence">Confirmed: "Files too large" error when real cause was 429 rate limit (Mar 12), Inaccurate Completion Progress % (ZD Mar 19).</div>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Phantom Companion Session</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>A Companion/Coach session appears as "active" even after user ended it. Blocks new sessions. Requires backend session reset.</p>
+          <div class="evidence">Confirmed: Ardent Mills (multiple users, ZD #11007), Calvetti Ferguson, KKR POV.</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> Escalate to Engineering for backend session reset.</p>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Session Not Syncing to Process Index</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Completed session content doesn't appear in the Process Index — the relevant process node is not updated. Distinct from visibility issues; the data was not written at all.</p>
+          <div class="evidence">Confirmed: Freshworks (ZD #11004), Ardent Mills worker queue backlog (Mar 13).</div>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Advisor Insights Failure</span>
+          <span class="sev-tag sev-med">Medium</span>
+        </div>
+        <div class="sub-detail">
+          <p>Advisor feature non-functional or producing incorrect output — can't be accessed, fails to generate, returns chat error, or uses outdated data snapshot.</p>
+          <div class="evidence">Confirmed: McKesson (ARC-4670), Athene, Aven Hospitality (ZD Mar 2), Advisor Version Mismatch (ARC-4553, Feb 18).</div>
+        </div>
+      </div>
+
+      <div class="sub-issue" onclick="toggleSub(this)">
+        <div class="sub-header">
+          <span class="sub-name">Workspace Data Loss</span>
+          <span class="sev-tag sev-high">Critical</span>
+        </div>
+        <div class="sub-detail">
+          <p>Workspace content unexpectedly deleted or overwritten. More severe and potentially irreversible than a save failure. Requires backend restore from S3 or database backup.</p>
+          <div class="evidence">Confirmed: Stripe workspace wiped clean (ZD Mar 17), Athene existing process data overwritten, Keysight deal packet S3 deletion request (Mar 19).</div>
+          <p style="margin-top:8px;"><strong>Fix:</strong> ESCALATE IMMEDIATELY to Engineering. Request S3/DB restore. Document exact scope of loss.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PREDICTED FUTURE ISSUES ── -->
+  <hr class="section-divider">
+  <div class="panel-title" style="font-size:16px;margin-bottom:12px;">⚠️ Predicted Future Issues</div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Emerging patterns expected to generate tickets as the platform scales.</p>
+  <div class="grid-2">
+    <div class="predicted-card"><h5>Process Version Rollback Failure</h5><p>When version history ships, expect issues with restoring wrong versions, partial rollbacks, or corrupting current versions.</p></div>
+    <div class="predicted-card"><h5>Unicode / Special Character Parsing</h5><p>Non-English content (Japanese, Arabic, currency symbols) breaking the text pipeline. Growing with international rollouts.</p></div>
+    <div class="predicted-card"><h5>Mass Interview Blast Saturation</h5><p>100+ Interviewer invites at once overwhelming the system. Already partially confirmed at UMB (P0 escalation).</p></div>
+    <div class="predicted-card"><h5>Large Workspace Index Timeout</h5><p>Enterprise customers with 500+ process nodes hitting search/hierarchy loading limits.</p></div>
+    <div class="predicted-card"><h5>Co-authoring Concurrent Edit Conflict</h5><p>Two users editing the same process node — last save wins, other changes silently lost.</p></div>
+    <div class="predicted-card"><h5>Hallucination in Compliance-Critical Output</h5><p>AI inventing details in SOX narratives, audit evidence — legal risk beyond quality issue. Monzo, Athene, McKesson.</p></div>
+    <div class="predicted-card"><h5>Integration Token Expiry</h5><p>Salesforce, SharePoint, SAP tokens expiring silently, breaking integrations weeks later.</p></div>
+    <div class="predicted-card"><h5>Browser Extension Conflict</h5><p>Claude Chrome extension interfering with Companion. Hard to reproduce, environment-specific.</p></div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████████████████
+     TAB 2 — DECISION TREE
+     ████████████████████████████████████████████████████████████████████ -->
+<div class="panel" id="panel-tree">
+  <div class="panel-title">Issue Triage Decision Tree</div>
+  <div class="panel-sub">Step-by-step triage flow for incoming tickets and Slack reports. Follow from top to classify and resolve.</div>
+
+  <div class="tree-step" style="background:var(--nightfall);color:white;">
+    <h4 style="color:white;">Step 1 — Where did the report come from?</h4>
+    <div class="tree-branch">
+      <div class="branch-opt branch-yes">Slack #ka-failed-operations → Go to Step 2 (Operation Failure)</div>
+      <div class="branch-opt branch-yes">Slack #architect-bugs-and-issues → Go to Step 3 (Bug Report)</div>
+      <div class="branch-opt branch-yes">Zendesk ticket → Go to Step 4 (Customer Report)</div>
+      <div class="branch-opt branch-yes">Customer Slack channel → Go to Step 4</div>
+    </div>
+  </div>
+
+  <div class="tree-connector">↓</div>
+
+  <div class="tree-step">
+    <h4>Step 2 — Operation Failure (#ka-failed-operations)</h4>
+    <p>Click the "View flow run details" link → Find the error message in the thread (red ❌ from klarity-bot) → Match to Error Codes tab.</p>
+    <div class="tree-branch">
+      <div class="branch-opt branch-yes">Error contains "models exhausted" / "429" / "timed out" → <strong>Operation Failures: AI Provider</strong></div>
+      <div class="branch-opt branch-yes">Error contains "TokenLimit" / "Max tokens" → <strong>Operation Failures: Token Limit</strong></div>
+      <div class="branch-opt branch-yes">Error contains "Cannot parse" / "EntityTooLarge" / "Timeout waiting" → <strong>File &amp; Template Errors</strong></div>
+      <div class="branch-opt branch-yes">Error contains "UniqueViolation" / "QueuePool" → <strong>Operation Failures: Infrastructure</strong></div>
+      <div class="branch-opt branch-no">Error not recognized → Escalate to Engineering with full error text</div>
+    </div>
+  </div>
+
+  <div class="tree-connector">↓</div>
+
+  <div class="tree-step">
+    <h4>Step 3 — Bug Report (#architect-bugs-and-issues)</h4>
+    <p>Determine the symptom category:</p>
+    <div class="tree-branch">
+      <div class="branch-opt branch-yes">"Can't log in" / "SSO error" / "Magic link" → <strong>Access &amp; Auth</strong> (see Playbook tab)</div>
+      <div class="branch-opt branch-yes">"Output is wrong" / "Hallucination" / "Missing content" → <strong>AI Output Quality</strong></div>
+      <div class="branch-opt branch-yes">"Can't see my process" / "Dashboard empty" / "Session stuck" → <strong>Product &amp; Environment</strong></div>
+      <div class="branch-opt branch-yes">"Network error" / "Save failed" / "Data gone" → <strong>Product &amp; Environment: Save/Data</strong></div>
+    </div>
+  </div>
+
+  <div class="tree-connector">↓</div>
+
+  <div class="tree-step">
+    <h4>Step 4 — Customer Report (Zendesk / Slack)</h4>
+    <p>Gather information using the Ticket Intake checklist, then classify:</p>
+    <div class="tree-branch">
+      <div class="branch-opt branch-yes">Customer can't access the platform at all → <strong>Access &amp; Auth</strong></div>
+      <div class="branch-opt branch-yes">Customer ran an operation and it failed → <strong>Operation Failure or File Error</strong></div>
+      <div class="branch-opt branch-yes">Customer ran an operation and output is wrong → <strong>AI Output Quality</strong></div>
+      <div class="branch-opt branch-yes">Platform feature is broken or not loading → <strong>Product &amp; Environment</strong></div>
+    </div>
+  </div>
+
+  <div class="tree-connector">↓</div>
+
+  <div class="tree-step">
+    <h4>Step 5 — Escalation Decision</h4>
+    <div class="tree-branch">
+      <div class="branch-opt branch-yes"><strong>Can CX resolve?</strong> Re-run, advise customer (file format, split docs, clear cache) → Resolve and close</div>
+      <div class="branch-opt branch-no"><strong>Needs Engineering?</strong> Check Linear for existing ticket → Attach to existing or create new → Tag POC owner</div>
+      <div class="branch-opt branch-esc"><strong>Critical / Data Loss?</strong> Escalate IMMEDIATELY → Ping #architect-bugs-and-issues + Engineering lead</div>
+    </div>
+  </div>
+
+  <div class="tree-connector">↓</div>
+
+  <div class="tree-step">
+    <h4>Step 6 — Engineering Escalation Routing</h4>
+    <p>Route to the correct engineering POC:</p>
+    <div class="tree-branch">
+      <div class="branch-opt branch-yes" style="background:#e0f4ff;color:#0e6b9e;border-color:#bae6fd;"><strong>AI Interviewer / Coach</strong> → Aditya</div>
+      <div class="branch-opt branch-yes" style="background:#e0f7ef;color:#059669;border-color:#a7f3d0;"><strong>Operations / Companion / Advisor</strong> → Abhinav</div>
+      <div class="branch-opt branch-yes" style="background:#ede9fe;color:#6d28d9;border-color:#c4b5fd;"><strong>Process Hierarchy / DPI</strong> → Kimball</div>
+      <div class="branch-opt branch-yes" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca;"><strong>System / Infra / Auth / Access</strong> → Satyendra</div>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="tree-step">
+    <h4>CX Team — Shift Coverage &amp; Roster</h4>
+    <p>24×5 coverage across 4 shifts. Contact the on-shift agent for handover context.</p>
+    <div class="tree-branch">
+      <div class="branch-opt" style="background:#e0f4ff;color:#0e6b9e;border:1px solid #bae6fd;"><strong>S1 (7AM–4PM IST):</strong> Larvin</div>
+      <div class="branch-opt" style="background:#e0f7ef;color:#059669;border:1px solid #a7f3d0;"><strong>S2 (3PM–12AM IST):</strong> Mehdi, Vikas</div>
+      <div class="branch-opt" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;"><strong>S3 (6PM–3AM IST):</strong> Saideep, Sushmita</div>
+      <div class="branch-opt" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;"><strong>S4 (11PM–8AM IST):</strong> Arun</div>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <strong>Quick Triage Shortcut:</strong> Go to #ka-failed-operations → click "View flow run details" → find the red ❌ error → match to the Error Codes tab → use the Fix/Action column. If no error code matches, escalate with the full error text.
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████████████████
+     TAB 3 — ERROR CODE REFERENCE
+     ████████████████████████████████████████████████████████████████████ -->
+<div class="panel" id="panel-errors">
+  <div class="panel-title">Error Code Reference</div>
+  <div class="panel-sub">Raw error messages mapped to plain-English meaning and fix actions. Search by error text, customer, or keyword.</div>
+
+  <div class="search-wrap"><input type="text" id="err-search" placeholder="Search error messages, codes, or keywords…" oninput="filterErrors()"></div>
+
+  <div class="table-wrap">
+    <table class="err-table" id="error-table">
+      <thead>
+        <tr><th style="width:60px;">ID</th><th>Raw Error Message</th><th>Plain-English Meaning</th><th>Fix / Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="err-id">1A</td><td class="err-raw">ChatException: All models exhausted after 1 attempts. Models tried: {'claude-opus-4-5'}</td><td>Claude was down — all retry attempts failed</td><td>Wait for Claude to recover; re-run operation. Check status.anthropic.com</td></tr>
+        <tr><td class="err-id">1B</td><td class="err-raw">ChatException: All models exhausted after 3 attempts. Models tried: {'gemini-2.5-pro'}</td><td>Gemini was down — Export Process specific</td><td>Wait for Gemini to recover; re-run</td></tr>
+        <tr><td class="err-id">1C</td><td class="err-raw">ChatException: All models exhausted after 4 attempts. Models tried: {'gpt-5.4', 'claude-opus-4-5'}</td><td>AI Interviewer: both Claude + GPT unavailable</td><td>Wait for both providers to recover; re-run</td></tr>
+        <tr><td class="err-id">1D</td><td class="err-raw">ChatException: Failed to generate Anthropic Text Completion: Unknown Error: Request timed out.</td><td>Claude took too long and the connection timed out</td><td>Re-run when Claude is stable; check status.anthropic.com</td></tr>
+        <tr><td class="err-id">1D</td><td class="err-raw">Anthropic Error 500 Internal Server Error</td><td>Claude's servers crashed mid-operation</td><td>Re-run when Claude is stable</td></tr>
+        <tr><td class="err-id">1E</td><td class="err-raw">429 Resource exhausted (Vertex AI / Google Cloud)</td><td>Too many AI requests sent in a short window — rate limited</td><td>Spread operations out; engineering to review rate limits</td></tr>
+        <tr><td class="err-id">2A</td><td class="err-raw">TokenLimitException: 1073316 tokens in input, but max input tokens is 950000</td><td>Document is too long for the AI to read in one go</td><td>Customer to split the document into smaller sections</td></tr>
+        <tr><td class="err-id">2B</td><td class="err-raw">ChatException: Max tokens exceeded during tool use, arguments were truncated</td><td>AI hit output limit mid-step — response was cut off</td><td>Engineering fix deployed Feb 27 for Google; re-run after fix</td></tr>
+        <tr><td class="err-id">3A</td><td class="err-raw">Chat failed: Your files are too large for us to process</td><td>Uploaded file(s) exceed the size limit</td><td>Customer to compress or split the file</td></tr>
+        <tr><td class="err-id">3B</td><td class="err-raw">KlarityException: Cannot parse artifact XXXXX</td><td>File is unreadable or in an unsupported format. Or artifact falsely marked "broken" in DB.</td><td>Customer to re-export as PDF or supported format. If still fails, Engineering must check artifact status in DB.</td></tr>
+        <tr><td class="err-id">3C</td><td class="err-raw">TimeoutError: Timeout waiting for artifact XXXXX to complete processing</td><td>File preprocessing got stuck and never finished</td><td>Check file integrity; re-upload. Tell customer NOT to re-upload if still processing.</td></tr>
+        <tr><td class="err-id">3D</td><td class="err-raw">Null characters from OCR causing DB insert failure</td><td>PDF OCR introduced invisible corrupt characters; DB rejected</td><td>Engineering fix deployed Feb 13; re-run</td></tr>
+        <tr><td class="err-id">3E</td><td class="err-raw">IndexError: single positional indexer is out-of-bounds (excel_service.py)</td><td>Spreadsheet has unexpected structure — column/row mismatch</td><td>Customer to clean up spreadsheet format; escalate to engineering</td></tr>
+        <tr><td class="err-id">3F</td><td class="err-raw">EntityTooLarge: PutObject exceeds maximum allowed size</td><td>Generated output document was too big to save to storage</td><td>Engineering to investigate output size limits; escalate</td></tr>
+        <tr><td class="err-id">4A</td><td class="err-raw">No section in template with ID section_one</td><td>Export template references a section that doesn't exist</td><td>Update export template to match workspace process structure</td></tr>
+        <tr><td class="err-id">4B</td><td class="err-raw">NotFoundException: Hierarchy node / Process not found in workspace</td><td>A process step was deleted or missing from the workspace</td><td>Restore or recreate missing node; re-run</td></tr>
+        <tr><td class="err-id">5A</td><td class="err-raw">QueuePool limit of size 10 overflow 25 reached, connection timed out</td><td>Database ran out of available connections — too many operations</td><td>Engineering: increase DB pool size (Linear CUS-195); re-run when load drops</td></tr>
+        <tr><td class="err-id">5B</td><td class="err-raw">UniqueViolation: duplicate key value violates unique constraint "artifact_input_artifacts_pkey"</td><td>Two uploads at the same time caused a data conflict</td><td>Fix deployed Feb 19 (race condition guard); advise customers: don't upload multiple docs at same time</td></tr>
+        <tr><td class="err-id">DB-1</td><td class="err-raw">(psycopg2.OperationalError) SSL connection has been closed unexpectedly</td><td>Database connection dropped mid-operation</td><td>Retry — resolves on second attempt. Escalate if recurring.</td></tr>
+        <tr><td class="err-id">DB-2</td><td class="err-raw">PendingRollbackError: unsupported Unicode escape sequence \u0000</td><td>AI returned null characters that the database cannot store</td><td>Escalate to Engineering immediately — code fix needed. Do NOT retry.</td></tr>
+        <tr><td class="err-id">DB-3</td><td class="err-raw">UniqueViolation: duplicate key violates "process_version_source_observation_pkey"</td><td>Companion tried to insert a duplicate record</td><td>Engineering DB investigation needed. Customer can try re-running.</td></tr>
+        <tr><td class="err-id">VID-1</td><td class="err-raw">RuntimeError: FFmpeg conversion failed</td><td>Server couldn't convert session recording from WebM to MP4</td><td>Customer to restart session. Escalate with session timestamp.</td></tr>
+        <tr><td class="err-id">VID-2</td><td class="err-raw">ValueError: No S3 objects detected within the polling window</td><td>Interview recording never arrived in storage, or upload took longer than polling window</td><td>Re-run should work. Ensure browser tab stays open, camera/mic granted, network stable.</td></tr>
+        <tr><td class="err-id">DOC-1</td><td class="err-raw">re.PatternError: bad character range b-T at position 33</td><td>AI output contained special characters breaking document conversion</td><td>Escalate to Engineering (Abhinav) — bug in template_rendering.py</td></tr>
+        <tr><td class="err-id">DOC-2</td><td class="err-raw">Missing sections after retry: 10, 12</td><td>Document partially generated, specific sections couldn't be produced</td><td>Escalate to Engineering (Abhinav) — check section logic before retry</td></tr>
+        <tr><td class="err-id">AI-OL</td><td class="err-raw">Anthropic overloaded_error: Overloaded (model=claude-opus-4-6)</td><td>Anthropic API temporarily overloaded</td><td>Retry — overloads usually clear in minutes</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████████████████
+     TAB 4 — TICKET INTAKE
+     ████████████████████████████████████████████████████████████████████ -->
+<div class="panel" id="panel-intake">
+  <div class="panel-title">Ticket Intake Checklist</div>
+  <div class="panel-sub">Use this checklist when triaging a new Zendesk ticket or Slack report to gather all information needed for classification and resolution.</div>
+
+  <div class="grid-2">
+    <div class="intake-card">
+      <h4>📋 Basic Information</h4>
+      <div class="check-item"><input type="checkbox"> Customer name &amp; workspace</div>
+      <div class="check-item"><input type="checkbox"> Reporter name &amp; email</div>
+      <div class="check-item"><input type="checkbox"> Date &amp; time of issue (with timezone)</div>
+      <div class="check-item"><input type="checkbox"> Source channel (Zendesk, Slack, email)</div>
+      <div class="check-item"><input type="checkbox"> Priority / urgency stated by customer</div>
+      <div class="check-item"><input type="checkbox"> Is this during a POV / pilot? (critical timing)</div>
+    </div>
+
+    <div class="intake-card">
+      <h4>🔍 Issue Details</h4>
+      <div class="check-item"><input type="checkbox"> What operation was being performed?</div>
+      <div class="check-item"><input type="checkbox"> What file type was uploaded? (.docx, .xlsx, .pdf, video)</div>
+      <div class="check-item"><input type="checkbox"> Exact error message (screenshot or copy-paste)</div>
+      <div class="check-item"><input type="checkbox"> How long did the operation run before failing?</div>
+      <div class="check-item"><input type="checkbox"> Is this reproducible? First time or recurring?</div>
+      <div class="check-item"><input type="checkbox"> How many users affected? (1 user vs. all users)</div>
+    </div>
+
+    <div class="intake-card">
+      <h4>🖥️ Environment</h4>
+      <div class="check-item"><input type="checkbox"> Browser (Chrome required, version if possible)</div>
+      <div class="check-item"><input type="checkbox"> Login method (SSO/Okta, Magic Auth, Email/Password)</div>
+      <div class="check-item"><input type="checkbox"> Any recent workspace migration?</div>
+      <div class="check-item"><input type="checkbox"> Any browser extensions that might interfere?</div>
+      <div class="check-item"><input type="checkbox"> Operating system (Windows, Mac, Linux)</div>
+    </div>
+
+    <div class="intake-card">
+      <h4>🔗 For Access / Auth Issues</h4>
+      <div class="check-item"><input type="checkbox"> Which IdP? (Okta, Azure AD/Entra, Google Workspace, none)</div>
+      <div class="check-item"><input type="checkbox"> SSO or Magic Auth or Email/Password?</div>
+      <div class="check-item"><input type="checkbox"> Is it one user or all users at the org?</div>
+      <div class="check-item"><input type="checkbox"> Any recent IdP changes? (migration, secret rotation)</div>
+      <div class="check-item"><input type="checkbox"> What error message on login screen?</div>
+      <div class="check-item"><input type="checkbox"> Can they access other SSO apps normally?</div>
+    </div>
+
+    <div class="intake-card">
+      <h4>📎 Attachments Requested</h4>
+      <div class="check-item"><input type="checkbox"> Screenshot of error</div>
+      <div class="check-item"><input type="checkbox"> Browser console log (F12 → Console)</div>
+      <div class="check-item"><input type="checkbox"> Network tab screenshot if relevant</div>
+      <div class="check-item"><input type="checkbox"> URL of the page where error occurred</div>
+      <div class="check-item"><input type="checkbox"> Sample file that triggered the issue (if applicable)</div>
+    </div>
+
+    <div class="intake-card">
+      <h4>✅ Classification</h4>
+      <div class="check-item"><input type="checkbox"> Matched to Issue Group: _______________</div>
+      <div class="check-item"><input type="checkbox"> Matched to Sub-Issue: _______________</div>
+      <div class="check-item"><input type="checkbox"> Error Code ID (from Error Codes tab): ___</div>
+      <div class="check-item"><input type="checkbox"> CX can resolve? Or needs Engineering?</div>
+      <div class="check-item"><input type="checkbox"> Escalated to: _______________ (name)</div>
+      <div class="check-item"><input type="checkbox"> Linear ticket created? ID: _______________</div>
+    </div>
+  </div>
+
+  <div class="tip-box" style="margin-top:16px;">
+    <strong>Triage Workflow:</strong> Step 1: Go to #ka-failed-operations → find the failure notification. Step 2: Click "View flow run details" → find the error. Step 3: Match error to Error Codes tab. Step 4: Get the plain-English explanation. Step 5: Follow the Fix/Action guidance. Step 6: Update Zendesk ticket.
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████████████████
+     TAB 5 — ACCESS & AUTH PLAYBOOK
+     ████████████████████████████████████████████████████████████████████ -->
+<div class="panel" id="panel-playbook">
+  <div class="panel-title">Access &amp; Authentication Playbook</div>
+  <div class="panel-sub">Detailed troubleshooting for login, SSO, Magic Auth, and user provisioning issues. Sourced from the User Login &amp; Onboarding Troubleshooting Guide, Entra ID SSO Config, and Magic Auth Setup Guide.</div>
+
+  <div class="playbook-section">
+    <h4>🔐 Authentication Methods Overview</h4>
+    <p>Klarity Architect supports three login methods, now powered by <strong>WorkOS</strong> as the underlying auth platform:</p>
+    <ul>
+      <li><strong>SSO (Okta / Azure AD Entra):</strong> Enterprise standard. Uses OIDC with PKCE via WorkOS. Requires customer IT setup. Recommended for all enterprise accounts.</li>
+      <li><strong>Magic Auth (Passwordless):</strong> One-click magic link sent to email via WorkOS MagicLink (migrated from Okta MagicLink). No passwords needed. Good for POVs, external interviewees, quick onboarding. Link expires in 10 minutes. OTP (one-time passcode) also supported.</li>
+      <li><strong>Email / Password:</strong> Traditional login. Used as fallback. Requires manual account creation in Architect MiniApp.</li>
+    </ul>
+  </div>
+
+  <div class="playbook-section">
+    <h4>🔄 WorkOS — Auth Platform Migration</h4>
+    <p>Klarity is migrating its authentication layer from direct Okta OIDC integration to <strong>WorkOS</strong> — a developer-focused identity platform that provides a unified API for SSO, Magic Links, OTP, and organization management.</p>
+    <ul>
+      <li><strong>What changed:</strong> Auth flows now route through WorkOS instead of directly to Okta/Azure AD. This adds a consistent auth layer regardless of the customer's IdP.</li>
+      <li><strong>Organization onboarding:</strong> New orgs are provisioned through WorkOS with E2E onboarding flow (see Loom: "WorkOS End to End Organization Onboarding").</li>
+      <li><strong>MagicLink migration:</strong> Okta MagicLink → WorkOS MagicLink, with OTP support added (see Loom: "Okta/MagicLink to WorkOS MagicLink Migration, OTP Setup").</li>
+      <li><strong>MiniApp integration:</strong> Creating and updating organizations now uses the MiniApp → WorkOS workflow (see Loom: "Creating &amp; Updating Organizations in MiniApp Workflow").</li>
+      <li><strong>Impact on troubleshooting:</strong> Auth errors may now surface WorkOS-specific messages. The underlying SSO config (Okta/Azure AD) remains customer-side, but the middleware layer is WorkOS.</li>
+    </ul>
+    <div class="warn-box">
+      <strong>Note:</strong> During the migration period, some customers may still be on the old Okta-direct flow while others are on WorkOS. Check which auth path the customer is on before troubleshooting.
+    </div>
+  </div>
+
+  <div class="playbook-section">
+    <h4>🚨 Common Failure Modes — Ranked by Frequency</h4>
+    <div class="table-wrap" style="max-height:none;">
+      <table class="failure-table">
+        <thead><tr><th>Frequency</th><th>Failure Mode</th><th>Symptom</th><th>Root Cause</th><th>Resolution</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="freq-tag sev-high">Very Common</span></td>
+            <td>Endless Login Loop</td>
+            <td>User logs in → immediately redirected back to login</td>
+            <td>Chrome blocking third-party cookies. Klarity uses cross-domain session tokens.</td>
+            <td>Chrome → Settings → Privacy → Cookies → "Allow all cookies" (or whitelist app.klarity.com). Hard refresh (Ctrl+Shift+R).</td>
+          </tr>
+          <tr>
+            <td><span class="freq-tag sev-high">Very Common</span></td>
+            <td>SSO Error Message on First Login</td>
+            <td>"Something went wrong" or OIDC error after Okta/Azure redirect</td>
+            <td>Misconfigured OIDC settings: wrong redirect URI, expired client secret, incorrect token endpoint auth method.</td>
+            <td>Verify in Okta/Azure: Redirect URI = exact match, client secret not expired, token endpoint auth = "client_secret_post".</td>
+          </tr>
+          <tr>
+            <td><span class="freq-tag sev-med">Common</span></td>
+            <td>Unable to Add Users in Okta</td>
+            <td>Admin can't assign users to Klarity app in Okta</td>
+            <td>App assignment not completed or user not in correct Okta group.</td>
+            <td>Okta Admin → Applications → Klarity → Assignments → Add user or group.</td>
+          </tr>
+          <tr>
+            <td><span class="freq-tag sev-med">Common</span></td>
+            <td>Magic Auth Link Not Arriving</td>
+            <td>User requests magic link but never receives email</td>
+            <td>Email in spam/junk, email mismatch (case-sensitive), or org email filters blocking.</td>
+            <td>Check spam folder. Verify email matches exactly. Whitelist noreply@klarity.com. Link expires in 10 min.</td>
+          </tr>
+          <tr>
+            <td><span class="freq-tag sev-med">Common</span></td>
+            <td>Magic Auth Invalid / Expired Code</td>
+            <td>"Invalid code" or "Link expired" when clicking magic link</td>
+            <td>Link used after 10-min expiry, or opened in different browser than where it was requested.</td>
+            <td>Request new link. Open in the same browser. Click within 10 minutes.</td>
+          </tr>
+          <tr>
+            <td><span class="freq-tag sev-low">Uncommon</span></td>
+            <td>Client Secret Expired</td>
+            <td>All users at org suddenly can't log in</td>
+            <td>Okta/Azure client secret reached its expiration date.</td>
+            <td>Customer IT to rotate secret in IdP. Klarity backend to update stored secret.</td>
+          </tr>
+          <tr>
+            <td><span class="freq-tag sev-low">Uncommon</span></td>
+            <td>Email Domain Mismatch</td>
+            <td>SSO works for some users but not others</td>
+            <td>User's email domain doesn't match the configured SSO domain. E.g. tylerfederal.com vs tylertech.com token mismatch.</td>
+            <td>Add all relevant email domains to the SSO configuration. Tyler Tech case study: had to add both domains.</td>
+          </tr>
+          <tr>
+            <td><span class="freq-tag sev-low">Uncommon</span></td>
+            <td>Email Case Sensitivity</td>
+            <td>User can't log in despite correct email</td>
+            <td>Klarity treats emails as case-sensitive in some auth flows. "John@acme.com" ≠ "john@acme.com".</td>
+            <td>Ensure email in IdP matches exactly. If mismatch exists, update in Architect MiniApp.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="playbook-section">
+    <h4>🔧 Okta SSO Setup Checklist</h4>
+    <ul>
+      <li><strong>App Type:</strong> OIDC - OpenID Connect → Web Application</li>
+      <li><strong>Grant Type:</strong> Authorization Code with PKCE</li>
+      <li><strong>Sign-in Redirect URI:</strong> Must exactly match Klarity's provided URI (no trailing slash differences)</li>
+      <li><strong>Token Endpoint Auth:</strong> Must be set to "client_secret_post" (not "client_secret_basic")</li>
+      <li><strong>Scopes:</strong> openid, profile, email</li>
+      <li><strong>User Assignment:</strong> Users or groups must be assigned to the Klarity app in Okta</li>
+      <li><strong>Client Secret:</strong> Note expiration date, set calendar reminder 30 days before</li>
+    </ul>
+  </div>
+
+  <div class="playbook-section">
+    <h4>🔧 Azure AD (Entra ID) SSO Setup Checklist</h4>
+    <ul>
+      <li><strong>App Registration:</strong> Azure Portal → App registrations → New registration</li>
+      <li><strong>Redirect URI:</strong> Platform = Web, URI = exact Klarity redirect</li>
+      <li><strong>Authentication:</strong> Enable ID tokens, configure front-channel logout URL</li>
+      <li><strong>Certificates &amp; Secrets:</strong> Create client secret, note expiry date</li>
+      <li><strong>API Permissions:</strong> Microsoft Graph → User.Read (delegated)</li>
+      <li><strong>Users &amp; Groups:</strong> Assign users/groups to the enterprise application</li>
+    </ul>
+  </div>
+
+  <div class="playbook-section">
+    <h4>✉️ Magic Auth — How It Works</h4>
+    <ul>
+      <li>User enters email → Klarity sends a one-time magic link to that email</li>
+      <li>User clicks the link → automatically logged in (no password)</li>
+      <li>Link expires in <strong>10 minutes</strong></li>
+      <li>Must be opened in the <strong>same browser</strong> where it was requested</li>
+      <li>Email matching is <strong>case-sensitive</strong> in some flows</li>
+      <li>Great for: POV participants, external interviewees, quick demos</li>
+    </ul>
+    <div class="tip-box">
+      <strong>GTM Talk Track:</strong> "Magic Auth removes the #1 barrier to POV adoption — IT involvement. Your team can start using Architect in minutes with just their email, no SSO setup required. When you're ready for full rollout, we'll set up SSO."
+    </div>
+  </div>
+
+  <div class="playbook-section">
+    <h4>🛠️ Architect MiniApp — Admin Operations</h4>
+    <p>The MiniApp is the internal admin tool for workspace and user management:</p>
+    <ul>
+      <li>Create/manage workspaces and organizations</li>
+      <li>Add/deactivate users</li>
+      <li>Reset user sessions (fix phantom sessions)</li>
+      <li>Check user authentication status</li>
+      <li>Update OIDC configuration</li>
+      <li>View workspace provisioning status</li>
+    </ul>
+    <div class="warn-box">
+      <strong>Eng Wishlist:</strong> MiniApp currently lacks: bulk user management, audit log visibility, self-service secret rotation, automated provisioning triggers. These are planned improvements.
+    </div>
+  </div>
+
+  <div class="playbook-section">
+    <h4>🏢 Workspace Creation, Addition &amp; Modification</h4>
+    <ul>
+      <li><strong>Creating a new workspace:</strong> Done via Architect MiniApp → Create Workspace. Requires: customer organization, workspace name, desired configuration. Provisioning is typically same-day.</li>
+      <li><strong>Adding users to a workspace:</strong> Via MiniApp (manual) or JIT provisioning (automatic on first SSO login). For Okta: users must be assigned to the Klarity app in Okta Admin → Applications.</li>
+      <li><strong>Modifying workspace settings:</strong> Run configs, process hierarchy structure, and export templates are modifiable by workspace admins. Known issue: some settings may not persist on save (config persistence failure).</li>
+      <li><strong>Workspace migration (V1 → V2):</strong> Managed by Engineering. Post-migration checks required: verify operations work, files accessible, configs applied correctly. Common failures: old config persisting, export template breaks.</li>
+      <li><strong>Multi-workspace customers:</strong> Some customers (e.g., UMB) have both Architect and Automate on Okta — users may see both apps. Ensure correct app assignment in the IdP.</li>
+      <li><strong>Workspace data restore:</strong> If workspace data is lost (critical issue), Engineering can restore from S3 snapshots or database backup. Requires: exact scope of loss, workspace ID, timestamp of incident.</li>
+    </ul>
+  </div>
+
+  <div class="playbook-section">
+    <h4>📧 Interview Invite Delivery Troubleshooting</h4>
+    <ul>
+      <li><strong>Symptom:</strong> Bulk AI Interviewer invites sent via "Assign Interview Task" but recipients don't receive them.</li>
+      <li><strong>Common causes:</strong> Email delivery failures (org email filters, spam), recipient email mismatch, blast saturation (100+ invites overwhelming the system).</li>
+      <li><strong>Troubleshooting steps:</strong> Check email delivery logs with Engineering. Verify all recipient emails. Send in smaller batches (recommended: 20-30 at a time). Check recipient spam/junk folders.</li>
+      <li><strong>Known issue:</strong> Sender has no visibility into which invites were successfully delivered — this is a UX gap being tracked.</li>
+      <li><strong>Confirmed cases:</strong> UMB (URGENT P0, ZD Feb 28), KLA pilot (Feb 24).</li>
+    </ul>
+  </div>
+
+  <div class="playbook-section">
+    <h4>🔄 Login Method Comparison &amp; Selection Guide</h4>
+    <div class="table-wrap" style="max-height:none;">
+      <table class="failure-table">
+        <thead><tr><th>Method</th><th>Best For</th><th>Setup Required</th><th>Pros</th><th>Cons</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>SSO (Okta/Azure)</strong></td>
+            <td>Enterprise rollout, 50+ users</td>
+            <td>Customer IT + Klarity config (1-2 weeks)</td>
+            <td>Centralized access control, auto-provisioning, meets compliance requirements</td>
+            <td>Requires IT coordination, client secrets expire, complex troubleshooting</td>
+          </tr>
+          <tr>
+            <td><strong>Magic Auth</strong></td>
+            <td>POVs, pilots, external interviewees</td>
+            <td>None — works immediately</td>
+            <td>Zero IT involvement, instant onboarding, great for POVs</td>
+            <td>Link expires in 10 min, case-sensitive, no centralized control</td>
+          </tr>
+          <tr>
+            <td><strong>Email / Password</strong></td>
+            <td>Fallback, small teams</td>
+            <td>Manual account creation in MiniApp</td>
+            <td>Simple, familiar</td>
+            <td>Password management burden, no SSO benefits, manual provisioning</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████████████████
+     TAB 6 — INCIDENT LOG
+     ████████████████████████████████████████████████████████████████████ -->
+<div class="panel" id="panel-incidents">
+  <div class="panel-title">Incident Log</div>
+  <div class="panel-sub">Confirmed incidents with customer names, dates, durations, and resolutions. Sourced from #ka-failed-operations, #ka-operation-notifications, #architect-bugs-and-issues, and Zendesk (Jan 27 – Apr 17, 2026). Historical analysis covers 3,500 tickets + 6 months of Slack data.</div>
+
+  <div class="search-wrap"><input type="text" id="log-search" placeholder="Search by customer, date, issue, or error…" oninput="filterLog()"></div>
+
+  <div class="table-wrap">
+    <table class="log-table" id="log-table">
+      <thead>
+        <tr><th>Date</th><th>Customer / Operation</th><th>Type</th><th>Duration</th><th>Issue (Sub-Issue)</th><th>Resolution</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Jan 21</td><td>KLA / Phase Exit Slides</td><td>Export Process</td><td>~5 min</td><td>1B — Gemini Down</td><td>Abhinav: "Gemini model is down." Re-ran after recovery</td></tr>
+        <tr><td>Jan 27–28</td><td>Multiple customers</td><td>Generate / Update Doc</td><td>Varies</td><td>1E — AI Rate Limited</td><td>429 Resource Exhausted wave; rate limits resolved over time</td></tr>
+        <tr><td>Jan 27</td><td>Tyler Tech / AI Interviewer</td><td>Update Doc Interviewer</td><td>~15 min</td><td>1C — AI Interviewer Down</td><td>Abhinav: "Fixing it." All models exhausted (Claude + GPT)</td></tr>
+        <tr><td>Feb 12</td><td>Google / Sales Bonus</td><td>Process Capture</td><td>Varies</td><td>3D — PDF OCR Corruption</td><td>OCR null characters; fix pushed Feb 13</td></tr>
+        <tr><td>Feb 13</td><td>Google / Sales Bonus (x2)</td><td>Process Capture</td><td>Varies</td><td>3D — PDF OCR Corruption</td><td>Google's first-ever operations both failed; fix deployed same day</td></tr>
+        <tr><td>Feb 19</td><td>Tyler Tech / POV (Nikki)</td><td>Process Capture</td><td>~5 min</td><td>5B — Race Condition</td><td>Kimball: "race condition." Fix deployed. Critical 48-hr POV impacted</td></tr>
+        <tr><td>Feb 26–27</td><td>Google Finance R2R (x3)</td><td>Process Capture</td><td>~5 min ea</td><td>2B — AI Response Cut Off</td><td>Max tokens exceeded; Kimball fix deployed Feb 27</td></tr>
+        <tr><td>Feb 26</td><td>Aven Hospitality / Corporate Booking</td><td>Process Capture (Interviewer)</td><td>~14 min</td><td>4B — Process Step Missing</td><td>Prakhar: "Re-ran it, did populate the process index"</td></tr>
+        <tr><td>Mar 3</td><td>EY / IPW Training Video</td><td>Process Capture</td><td>25 min</td><td>1D — AI Timed Out</td><td>Saideep: "Claude had a downtime." 2.5GB video file</td></tr>
+        <tr><td>Mar 3</td><td>Bahir / KLA SP11 (Excel)</td><td>Enrich Spreadsheet</td><td>Varies</td><td>1A — Claude Down</td><td>Abhinav: "anthropic being unstable." New LLM framework</td></tr>
+        <tr><td>Mar 3</td><td>Google / Bank Account Opening</td><td>Process Capture</td><td>33 min</td><td>1A — Claude Down</td><td>Anthropic 500 error; resolved after Claude stabilized</td></tr>
+        <tr><td>Mar 5</td><td>Global Foundries / SAM-ILMT</td><td>Generate Document</td><td>50 min</td><td>5A — DB Pool Exhausted</td><td>Mehdi: Linear CUS-195 filed</td></tr>
+        <tr><td>Mar 10</td><td>KLA-SP11</td><td>Process Step Edit</td><td>N/A</td><td>Network Error on Save</td><td>Save failed silently; changes lost on refresh</td></tr>
+        <tr><td>Mar 12</td><td>McKesson</td><td>SSO Login</td><td>N/A</td><td>SSO / OIDC Failure</td><td>Okta migration caused auth breakdown</td></tr>
+        <tr><td>Mar 16–17</td><td>KLA / Phase Exit Slides</td><td>Export Process</td><td>~5 min</td><td>1B — Gemini Down</td><td>Girish: "Claude is down I think." Kimball: Export uses Gemini</td></tr>
+        <tr><td>Mar 17</td><td>KLA / UDC Invoice</td><td>Process Capture</td><td>18 min</td><td>2C — Context Overflow</td><td>Kimball: "context limit issue, a fix has been pushed"</td></tr>
+        <tr><td>Mar 17</td><td>Stripe</td><td>Workspace</td><td>N/A</td><td>Workspace Data Loss</td><td>Workspace wiped clean — escalated for DB/S3 restore</td></tr>
+        <tr><td>Mar 19</td><td>AAK / Shipment Cost</td><td>Export Process</td><td>19 min</td><td>4A — Template Misconfigured</td><td>Template section ID mismatch</td></tr>
+        <tr><td>Mar 24</td><td>PubMatic</td><td>Generate Document</td><td>N/A</td><td>Export Discrepancy</td><td>Blue lines in narrative (ZD #11403)</td></tr>
+        <tr><td>Various</td><td>JLL / India Commission</td><td>Process Capture</td><td>&lt;1 min</td><td>3A — File Too Large</td><td>Customer to split/compress files</td></tr>
+        <tr><td>Various</td><td>UMB / Mapping</td><td>Generate Document</td><td>40 min</td><td>3C — Preprocessing Timeout</td><td>File integrity issue; re-upload and retry</td></tr>
+        <tr><td>Various</td><td>Ripple / Pro Service Accruals</td><td>Process Capture (Interviewer)</td><td>30 min</td><td>3F — Output Too Large</td><td>S3 size limit exceeded</td></tr>
+        <tr style="background:#f0f9ff;"><td colspan="6" style="font-weight:700;color:var(--nightfall);padding:8px 12px;">▾ Additional incidents from session history (Apr 2026)</td></tr>
+        <tr><td>Mar–Apr</td><td>Ardent Mills / Tobi Norton (ZD #10853)</td><td>Onboarding / Access</td><td>8 days</td><td>Workspace Not Provisioned</td><td>Account never activated, 11 back-and-forth interactions. 1-day link expiry, no pre-kickoff validation</td></tr>
+        <tr><td>Mar–Apr</td><td>Ardent Mills / Dean Kittelson (ZD #11107)</td><td>Login / Access</td><td>N/A</td><td>SSO &amp; Login Failures</td><td>Landed on Automate login instead of Architect. Customer: "Sick of this app already"</td></tr>
+        <tr><td>Mar–Apr</td><td>Freshworks / Anand Sankaran (ZD #11194)</td><td>Advisor + Export</td><td>N/A</td><td>Advisor Insights + Export Discrepancy</td><td>PDF rendering missing connecting lines + Advisor over-correction. Linear tickets created</td></tr>
+        <tr><td>Mar–Apr</td><td>Calvetti Ferguson / Amanda (ZD #11563)</td><td>Companion</td><td>9 hrs</td><td>UI Status Inaccuracy</td><td>9-hour session displays as &lt;1 minute. Data captured correctly, UI clock bug only</td></tr>
+        <tr><td>Mar–Apr</td><td>Ripple / Wenjie (ZD #11318)</td><td>Process Capture</td><td>N/A</td><td>File &amp; Upload Error</td><td>3 videos uploaded to same process, only 1 succeeded</td></tr>
+        <tr><td>Mar–Apr</td><td>Elo/GPC (ZD #11305)</td><td>Interview Capture</td><td>N/A</td><td>Session Not Syncing</td><td>Interview capture not appearing in process after completion</td></tr>
+        <tr><td>Mar</td><td>EY / Ian Mackie (ZD #10643)</td><td>User Provisioning</td><td>N/A</td><td>User Provisioning &amp; RBAC</td><td>Offshore domains (ky.ey.com, gds.ey.com) needed whitelisting. Stale since Mar 6</td></tr>
+        <tr><td>Mar</td><td>Lexicon / Kennedy Placek (ZD #10888)</td><td>Login / Access</td><td>N/A</td><td>Account Locked / Deactivated</td><td>Okta status PROVISIONED not ACTIVE. CEO's branding partner — high visibility</td></tr>
+        <tr><td>Feb–Mar</td><td>AAK Malaysia / Jiayee (ZD #10572)</td><td>Interviewer</td><td>N/A</td><td>Audio Input Failure</td><td>Mic issue, 3 follow-ups, still unresolved</td></tr>
+        <tr><td>Feb</td><td>TYL / POV</td><td>Process Capture</td><td>N/A</td><td>Token / Context Limit</td><td>72–112MB PDF + 300MB video exceeding token limit (~4x over)</td></tr>
+        <tr><td>Various</td><td>Stripe (ZD #8166, #9343)</td><td>Login / SSO</td><td>N/A</td><td>SSO &amp; Login Failures</td><td>Azure AD UPN mismatch: snanjappa vs somananjappa@freshworks.com</td></tr>
+        <tr style="background:#f0f9ff;"><td colspan="6" style="font-weight:700;color:var(--nightfall);padding:8px 12px;">▾ From deep Slack &amp; Zendesk historical analysis (Sep 2025–Apr 2026)</td></tr>
+        <tr><td>Apr 13</td><td>Multiple customers (x10+)</td><td>Service Incident</td><td>~24 hrs</td><td>Platform-Wide Service Outage</td><td>Apr 13 service incident; customer comms sent via ZD #12246–12262. Action Required for 8+ customers</td></tr>
+        <tr><td>Apr 14</td><td>BCG / DCG Deployment (ZD #12338)</td><td>V2 Migration</td><td>N/A</td><td>V2 Node Type Corruption</td><td>Empty leaf nodes converted to folder nodes after V2 migration. Process index structure broken. #architect-bugs-and-issues</td></tr>
+        <tr><td>Apr 16</td><td>Forvis Mazars / Clarity Demo (ZD #12313)</td><td>Advisor</td><td>Ongoing</td><td>Advisor Infinite Loop</td><td>Multiple advisor sessions running in parallel, erroring out but not resolving. Reported in #architect-bugs-and-issues</td></tr>
+        <tr><td>Apr 11</td><td>JLL / Splint Process</td><td>Process Capture</td><td>N/A</td><td>Process Merging Failure</td><td>TOP PRIORITY per Cory Fridman. jLL-splint process merging issue — distinct processes incorrectly merged. Q2 discussion</td></tr>
+        <tr><td>Apr 15</td><td>PwC / Multi-workspace</td><td>Template</td><td>N/A</td><td>Template Availability Gap</td><td>4 baseline templates PwC uses not available across new workspaces. Template distribution issue</td></tr>
+        <tr><td>Mar 17–Apr 13</td><td>Athene V2.0 / BSTAT</td><td>Operation Failure</td><td>Recurring</td><td>BSTAT Control Framework — Recurring</td><td>3+ failures: Mar 17, Mar 25, Apr 13. Persistent operation failure in Athene workspace. Needs root cause analysis</td></tr>
+        <tr><td>Apr 15</td><td>Remitly / Global AML (ZD #12277)</td><td>Operation Failure</td><td>N/A</td><td>Opportunity Operation Failure</td><td>Recurring failures on Global AML operations. Multiple tickets: #12333, #12340, #12342</td></tr>
+        <tr><td>Apr 16</td><td>Advisor / Process Reconciliation</td><td>AI Output</td><td>N/A</td><td>Reconciliation Depth Gap</td><td>Companion/Advisor insufficient for complex reconciliation scenarios (bank rec vs AR subledger). Financial services impact</td></tr>
+        <tr><td>Apr 15</td><td>Multiple / Login Issues (ZD #12282, #12311, #12325)</td><td>Login / Auth</td><td>N/A</td><td>Login Errors — Cluster</td><td>3 login-related tickets in 2 days. Includes EJ login error (pending), general login problems</td></tr>
+        <tr><td>Apr 15</td><td>Multiple / UIP Failures (ZD #12274-12279)</td><td>UIP Failure</td><td>N/A</td><td>UIP Failure Cluster</td><td>5 UIP failures detected from Slack in a single day. Automated detection via #ka-failed-operations</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████████████████
+     TAB 7 — FEATURE GLOSSARY
+     ████████████████████████████████████████████████████████████████████ -->
+<div class="panel" id="panel-glossary">
+  <div class="panel-title">Feature Glossary</div>
+  <div class="panel-sub">Key Klarity Architect product terms, features, and concepts for all internal teams.</div>
+
+  <div class="search-wrap"><input type="text" id="gloss-search" placeholder="Search terms…" oninput="filterGlossary()"></div>
+
+  <div class="grid-2" id="glossary-grid">
+    <div class="gloss-card"><h4>AI Interviewer</h4><p>AI-powered interview agent that conducts process capture conversations with users. Uses Claude + GPT models. Records sessions, extracts process steps, and captures screenshots. POC: Aditya.</p></div>
+    <div class="gloss-card"><h4>Coach</h4><p>AI coaching feature that guides users through process improvement. Provides recommendations, identifies gaps, and suggests optimizations based on captured process data. POC: Aditya.</p></div>
+    <div class="gloss-card"><h4>Companion (DPI Companion)</h4><p>In-app chat assistant for the Process Index. Always-on screen recording during sessions. Captures process steps as users work. Can create phantom sessions if not properly ended. POC: Abhinav.</p></div>
+    <div class="gloss-card"><h4>Advisor</h4><p>Analytics and recommendations engine. Generates insights from captured process data. Can fail if using outdated data snapshot. Related: ARC-4670, ARC-4553. POC: Abhinav.</p></div>
+    <div class="gloss-card"><h4>Operations</h4><p>Core processing engine — runs Process Capture, Generate Document, Update Document, Export Process, Enrich Spreadsheet. Failures tracked in #ka-failed-operations. POC: Abhinav.</p></div>
+    <div class="gloss-card"><h4>Process Index</h4><p>Hierarchical view of all captured processes in a workspace. Supports search. Background indexing job runs after operations complete. Visibility issues are a known category.</p></div>
+    <div class="gloss-card"><h4>Process Hierarchy</h4><p>The organizational structure of processes — parent nodes, child nodes, groups. Can become mismatched after migrations or concurrent edits. POC: Kimball.</p></div>
+    <div class="gloss-card"><h4>DPI Agent</h4><p>Document Processing Intelligence agent. Powers the AI pipeline for document analysis. Three-Factor Alignment Test validates output quality. POC: Kimball.</p></div>
+    <div class="gloss-card"><h4>Context Store</h4><p>Customer-configurable rules and business terminology that guide AI behavior. Misconfiguration can cause subtle output errors that look like hallucinations.</p></div>
+    <div class="gloss-card"><h4>Magic Auth</h4><p>Passwordless authentication via one-time magic link sent to email. Link expires in 10 min. Must use same browser. Case-sensitive email matching. Ideal for POVs and external users.</p></div>
+    <div class="gloss-card"><h4>SSO / OIDC</h4><p>Single Sign-On using OpenID Connect protocol with PKCE. Supported IdPs: Okta, Azure AD (Entra ID), Google Workspace. Requires customer IT setup. Enterprise standard.</p></div>
+    <div class="gloss-card"><h4>Architect MiniApp</h4><p>Internal admin tool for workspace and user management. Create workspaces, add/deactivate users, reset sessions, update OIDC config. Currently lacks bulk management and audit logs.</p></div>
+    <div class="gloss-card"><h4>Signals / Insights Dashboard</h4><p>Analytics dashboard showing process intelligence and operational metrics. Known issue: can show empty despite data being present (ZD #10714, #10718).</p></div>
+    <div class="gloss-card"><h4>Export Process</h4><p>Generates output documents from captured process data using templates. Uses Gemini AI (not Claude). Fails if template section IDs don't match workspace structure.</p></div>
+    <div class="gloss-card"><h4>Generate Document</h4><p>Creates new documents (SOPs, narratives) from process data. Uses Claude. Subject to token limits (950K max). Can produce incomplete output.</p></div>
+    <div class="gloss-card"><h4>Enrich Spreadsheet</h4><p>AI-powered spreadsheet analysis and enrichment. Sensitive to spreadsheet layout — unexpected column positions or missing headers cause crashes (excel_service.py).</p></div>
+    <div class="gloss-card"><h4>#ka-failed-operations</h4><p>Slack channel where all operation failures are posted automatically by klarity-bot. Primary source for triage. Each failure has a "View flow run details" link to #ka-operation-notifications.</p></div>
+    <div class="gloss-card"><h4>#architect-bugs-and-issues</h4><p>Slack channel for bug reports from internal teams. Covers all issue types including access, UI, and product behavior issues.</p></div>
+    <div class="gloss-card"><h4>Linear</h4><p>Engineering project management tool. Bug tickets are created as Linear issues with ARC- prefix (e.g., ARC-4920). CUS- prefix for customer-reported infrastructure issues.</p></div>
+    <div class="gloss-card"><h4>Three-Factor Alignment Test</h4><p>Quality validation framework for DPI Agent output. Tests alignment across three dimensions to ensure generated content matches source material.</p></div>
+    <div class="gloss-card"><h4>Workspace</h4><p>A customer's isolated environment in Architect containing their processes, documents, operations, and configurations. Must be provisioned by Klarity before use. Workspace data loss is a Critical-severity issue requiring S3/DB restore.</p></div>
+    <div class="gloss-card"><h4>Workspace Provisioning</h4><p>The process of creating a new workspace for a customer. Done via Architect MiniApp. Blocks all other work until complete. Common first step in onboarding. Provisioning failures categorized under Access &amp; Authentication.</p></div>
+    <div class="gloss-card"><h4>Organization</h4><p>A top-level entity in Architect that can contain multiple workspaces. Organizations map to customer companies. Users are assigned to organizations, and their access is controlled at the org and workspace level.</p></div>
+    <div class="gloss-card"><h4>User Provisioning (JIT / SCIM)</h4><p>Just-In-Time provisioning creates user accounts automatically on first SSO login. SCIM (System for Cross-domain Identity Management) enables automated user sync from IdP to Architect. Both can fail if attribute mapping is misconfigured.</p></div>
+    <div class="gloss-card"><h4>RBAC (Role-Based Access Control)</h4><p>Permission system controlling what users can do within a workspace. Roles include admin, editor, viewer. Permission changes can fail to persist (known issue). Future: fine-grained access control predicted to cause misconfiguration tickets.</p></div>
+    <div class="gloss-card"><h4>Workspace Migration</h4><p>Moving a workspace between platform versions (e.g., V1 → V2). Post-migration failures are a known issue category — operations may fail, files become inaccessible, or old configs persist. Confirmed: JLL (ARC-4965).</p></div>
+    <div class="gloss-card"><h4>Config Persistence</h4><p>Workspace settings and run configurations that should persist across sessions. Known issue: settings sometimes revert to previous values on page refresh. Backend write appears to succeed but change is not actually stored.</p></div>
+    <div class="gloss-card"><h4>Assign Interview Task</h4><p>Operation to send bulk AI Interviewer invitations to users. Known delivery failures at scale — invites fail silently with no visibility into which succeeded. Confirmed: UMB (P0), KLA pilot.</p></div>
+    <div class="gloss-card"><h4>OIDC / PKCE</h4><p>OpenID Connect with Proof Key for Code Exchange — the auth protocol used by Klarity for SSO. Requires: redirect URI match, client_secret_post auth method, openid/profile/email scopes. Client secrets expire.</p></div>
+    <div class="gloss-card"><h4>WorkOS</h4><p>Developer-focused identity and auth platform that Klarity is migrating to. Provides unified API for SSO, Magic Links, OTP, and organization management. Replaces direct Okta OIDC integration as the auth middleware layer. See #architect-product-updates for migration details and Loom walkthroughs.</p></div>
+    <div class="gloss-card"><h4>WorkOS MagicLink</h4><p>Passwordless auth via WorkOS (replacing Okta MagicLink). Sends a one-time link or OTP code to the user's email. OTP support is a new addition post-migration. Link expires in 10 minutes, must use same browser.</p></div>
+    <div class="gloss-card"><h4>WorkOS Organization</h4><p>A WorkOS entity representing a customer organization. Created during onboarding via MiniApp → WorkOS flow. Maps to a Klarity organization. SSO connections and user directories are configured at the WorkOS org level.</p></div>
+    <div class="gloss-card"><h4>ABAC (Attribute-Based Access Control)</h4><p>Next-generation access control model in development for Architect. Goes beyond RBAC by evaluating user attributes, resource attributes, and environmental conditions for access decisions. JLL has specifically inquired about timeline. Expected to enable fine-grained permissions.</p></div>
+    <div class="gloss-card"><h4>Dual-Screen Companion</h4><p>Enhancement to Companion launched Apr 8, 2026. Allows Companion to observe both screens during coaching sessions — primary workflow plus supporting reference material. Critical for multi-monitor enterprise users who reference secondary systems while executing core processes.</p></div>
+    <div class="gloss-card"><h4>V2 Migration</h4><p>Platform upgrade from V1 to V2 architecture. Known issues: empty leaf nodes converting to folder nodes post-migration (DCG, BCG affected), operation failures on migrated workspaces, old configs persisting. Confirmed issue: JLL (ARC-4965). Post-migration validation required.</p></div>
+    <div class="gloss-card"><h4>"What's New" Sidebar</h4><p>In-app feature launched Mar 28, 2026 to surface product updates to users. Shows gradient highlight + badge for new features, plain display when caught up. Created because major features (Companion, Proactive Advisor, Teams, on-demand diagrams) were being discovered by accident months after launch.</p></div>
+    <div class="gloss-card"><h4>UIP (Unstructured Input Processing)</h4><p>Pipeline that processes unstructured inputs (documents, videos, audio) into structured process data. Failures tracked via automated Slack detection in #ka-failed-operations. High volume — 5+ failures per day during peak periods. Common cause of Zendesk ticket clusters.</p></div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████████████████
+     TAB 8 — RESOURCES & REFERENCES
+     ████████████████████████████████████████████████████████████████████ -->
+<div class="panel" id="panel-resources">
+  <div class="panel-title">Resources &amp; References</div>
+  <div class="panel-sub">All source materials, links, and references organized by type. Use these for deeper investigation and context.</div>
+
+  <div class="grid-2">
+    <div class="res-group">
+      <h4>💬 Slack Channels</h4>
+      <div class="res-link"><span class="res-type rt-slack">Slack</span><a href="https://klarity.slack.com/archives/C07PZPMMR3N" target="_blank">#architect-bugs-and-issues</a> — Primary bug reporting channel</div>
+      <div class="res-link"><span class="res-type rt-slack">Slack</span><a href="https://klarity.slack.com/archives/C085ALK79AY" target="_blank">#ka-failed-operations</a> — Automated failure notifications</div>
+      <div class="res-link"><span class="res-type rt-slack">Slack</span><a href="https://klarity.slack.com/archives/C086BSLKJFE" target="_blank">#ka-operation-notifications</a> — Flow run detail threads</div>
+      <div class="res-link"><span class="res-type rt-slack">Slack</span><a href="https://klarity.slack.com/archives/C0869ER9VSA" target="_blank">#ka-operations-success</a> — Successful operation logs</div>
+      <div class="res-link"><span class="res-type rt-slack">Slack</span><a href="https://klarity.slack.com/archives/C07RCRP8MQQ" target="_blank">#architect-releases</a> — Release notes and deployments</div>
+      <div class="res-link"><span class="res-type rt-slack">Slack</span><a href="https://klarity.slack.com/archives/C0887MKJWLP" target="_blank">#ka-analytics</a> — Platform analytics</div>
+      <div class="res-link"><span class="res-type rt-slack">Slack</span><a href="https://klaritylaw.slack.com/archives/C0805716A0J" target="_blank">#architect-product-updates</a> — Product updates, WorkOS migration</div>
+      <div class="res-link"><span class="res-type rt-slack">Slack</span><a href="https://klaritylaw.slack.com/archives/C041AHC9MQT" target="_blank">#tech-devops-infra</a> — DevOps, infrastructure, deployment issues</div>
+    </div>
+
+    <div class="res-group">
+      <h4>🎫 Zendesk</h4>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/filters/35338467053587" target="_blank">Open Tickets — All Architect</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/10731" target="_blank">ZD #10731 — SSO Integration Failure</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/11004" target="_blank">ZD #11004 — Freshworks Index Visibility</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/11007" target="_blank">ZD #11007 — Ardent Mills Phantom Session</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/11306" target="_blank">ZD #11306 — Uber-Logistics Template</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/11403" target="_blank">ZD #11403 — PubMatic Export</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/10853" target="_blank">ZD #10853 — Ardent Mills Onboarding (Tobi Norton)</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/11107" target="_blank">ZD #11107 — Ardent Mills Account Activation (Dean Kittelson)</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/11194" target="_blank">ZD #11194 — Freshworks Advisor/PDF Bugs</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/11563" target="_blank">ZD #11563 — Calvetti Ferguson Companion Duration Bug</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/10888" target="_blank">ZD #10888 — Lexicon/Kennedy Okta PROVISIONED Status</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/10643" target="_blank">ZD #10643 — EY Domain Whitelisting</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/10572" target="_blank">ZD #10572 — AAK Malaysia Mic Issue</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/11305" target="_blank">ZD #11305 — Elo/GPC Interview Capture Missing</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/11318" target="_blank">ZD #11318 — Ripple Multi-Video Upload Failure</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/12338" target="_blank">ZD #12338 — V2 Migration Node Type Corruption</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/12313" target="_blank">ZD #12313 — Forvis Mazars Advisor Infinite Loop</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/12282" target="_blank">ZD #12282 — Login Issues Cluster (Apr 15)</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/12299" target="_blank">ZD #12299 — AI Interviewer Session Erroring Out</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/12281" target="_blank">ZD #12281 — Operations Ignoring Upload Files</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/12255" target="_blank">ZD #12255 — Apr 13 Service Incident (Action Required)</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/12301" target="_blank">ZD #12301 — Process Steps Irrelevant Screenshots</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/12337" target="_blank">ZD #12337 — Product Tables Not Populating</a></div>
+      <div class="res-link"><span class="res-type rt-zendesk">Zendesk</span><a href="https://klarity6695.zendesk.com/agent/tickets/12283" target="_blank">ZD #12283 — Monthly Credential Rotation Support</a></div>
+    </div>
+
+    <div class="res-group">
+      <h4>📄 Google Docs</h4>
+      <div class="res-link"><span class="res-type rt-gdoc">Doc</span><a href="https://docs.google.com/document/d/1o0M31DNXY0IFjP_xHMlxmZj5wk03C8oRdlfnUSEFmd4/edit" target="_blank">[INT] User Login &amp; Onboarding Troubleshooting Guide</a></div>
+      <div class="res-link"><span class="res-type rt-gdoc">Doc</span><a href="https://docs.google.com/document/d/1eROxCpJLqCsCt4GnFuEVIAaXRLLPVRLLqPd5FPBZiQg/edit" target="_blank">Klarity Microsoft Entra ID SSO Configuration</a></div>
+      <div class="res-link"><span class="res-type rt-gdoc">Doc</span><a href="https://docs.google.com/document/d/1O4GKfqJv5A0iByYCxKdMz2v1oiKVvfp-4LX1G7Z-c5I/edit" target="_blank">User Login and Setup Guide for Magic Auth</a></div>
+    </div>
+
+    <div class="res-group">
+      <h4>📊 Google Sheets</h4>
+      <div class="res-link"><span class="res-type rt-gsheet">Sheet</span><a href="https://docs.google.com/spreadsheets/d/11tTOJIzOXoFHf6LJlHYodfxgrZVFwOX2-vJAoBOqWCY/edit" target="_blank">Known Issues &amp; Sub-Issues (Source of Truth)</a></div>
+      <div class="res-link"><span class="res-type rt-gsheet">Sheet</span><a href="https://docs.google.com/spreadsheets/d/1DvIJ0E5OF5V6Cjw0fgYfQ8LiEtXKuQ7g6a7KmEKbvX0/edit" target="_blank">Architect Issue Categorization (Legacy)</a></div>
+    </div>
+
+    <div class="res-group">
+      <h4>📄 CX Operations</h4>
+      <div class="res-link"><span class="res-type rt-gdoc">Doc</span><a href="https://docs.google.com/document/d/1H9Kz69Wrk4Jf5iththX-dWyETV_9Jd1O8wSRIZW1g1g/edit" target="_blank">Claude Session Analysis — CX Automation Recommendations</a></div>
+    </div>
+
+    <div class="res-group">
+      <h4>🎨 Figma &amp; Design</h4>
+      <div class="res-link"><span class="res-type rt-figma">Figma</span><a href="https://www.figma.com/board/mXKvo2bHjPVDGTFxNkwFvE" target="_blank">Architect Issue Taxonomy Board</a></div>
+    </div>
+
+    <div class="res-group">
+      <h4>🎥 Loom Videos</h4>
+      <div class="res-link"><span class="res-type rt-loom">Loom</span><a href="https://www.loom.com/share/fe0f21a25af14a1a821f7f84febaee8f" target="_blank">Architect Issue Taxonomy Walkthrough</a></div>
+      <div class="res-link"><span class="res-type rt-loom">Loom</span><a href="https://www.loom.com/share/56e96f2e1ea3478a9d5c4a4fc2ac3e30" target="_blank">Failed Operations Deep Dive</a></div>
+      <div class="res-link"><span class="res-type rt-loom">Loom</span><a href="https://www.loom.com/share/009d0f630b844360bff42d87745a35f9" target="_blank">WorkOS End to End Organization Onboarding</a></div>
+      <div class="res-link"><span class="res-type rt-loom">Loom</span><a href="https://www.loom.com/share/282f7fca2a2345fab45cb975e5790bef" target="_blank">Okta/MagicLink to WorkOS MagicLink Migration &amp; OTP Setup</a></div>
+      <div class="res-link"><span class="res-type rt-loom">Loom</span><a href="https://www.loom.com/share/16676473226e49ca964c586205f759cc" target="_blank">Creating &amp; Updating Organizations in MiniApp Workflow</a></div>
+    </div>
+
+    <div class="res-group">
+      <h4>🔑 WorkOS (Auth Platform)</h4>
+      <div class="res-link"><span class="res-type rt-slack">Slack</span><a href="https://klaritylaw.slack.com/archives/C0805716A0J/p1776180449982509" target="_blank">#architect-product-updates — WorkOS Migration Thread</a></div>
+      <div class="res-link"><span class="res-type rt-loom">Loom</span><a href="https://www.loom.com/share/009d0f630b844360bff42d87745a35f9" target="_blank">WorkOS E2E Org Onboarding (~10 min)</a></div>
+      <div class="res-link"><span class="res-type rt-loom">Loom</span><a href="https://www.loom.com/share/282f7fca2a2345fab45cb975e5790bef" target="_blank">Okta → WorkOS MagicLink Migration &amp; OTP (~9 min)</a></div>
+      <div class="res-link"><span class="res-type rt-loom">Loom</span><a href="https://www.loom.com/share/16676473226e49ca964c586205f759cc" target="_blank">MiniApp Org Create/Update Workflow (~10 min)</a></div>
+    </div>
+
+    <div class="res-group">
+      <h4>🔧 Engineering (Linear)</h4>
+      <div class="res-link"><span class="res-type rt-linear">Linear</span>ARC-4920 — McKesson Advisor Export Discrepancy</div>
+      <div class="res-link"><span class="res-type rt-linear">Linear</span>ARC-4965 — JLL Post-Migration Failure</div>
+      <div class="res-link"><span class="res-type rt-linear">Linear</span>ARC-5111 — Companion Session Failure (Mar 24)</div>
+      <div class="res-link"><span class="res-type rt-linear">Linear</span>ARC-4553 — Advisor Version Mismatch</div>
+      <div class="res-link"><span class="res-type rt-linear">Linear</span>CUS-195 — DB Connection Pool Exhaustion</div>
+    </div>
+
+    <div class="res-group">
+      <h4>📋 Data Sources</h4>
+      <div class="res-link"><span class="res-type rt-slack">Source</span>#ka-failed-operations — 260+ failure notifications (Jan 27 – Apr 17, 2026)</div>
+      <div class="res-link"><span class="res-type rt-slack">Source</span>#ka-operation-notifications — 20+ flow run detail threads sampled</div>
+      <div class="res-link"><span class="res-type rt-slack">Source</span>Key team members: Abhinav Venkatadri, Kimball Hill, Mehdi Hasnain, Satyendra, Girish Paliwal</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .panels -->
+
+<!-- ████ JAVASCRIPT ████ -->
+<script>
+  // ── Tab Switching ──
+  function showPanel(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const map = {taxonomy:0, tree:1, errors:2, intake:3, playbook:4, incidents:5, glossary:6, resources:7};
+    document.getElementById('panel-' + id).classList.add('active');
+    document.querySelectorAll('.tab')[map[id]].classList.add('active');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  // ── Group Expand/Collapse ──
+  function toggleGroup(header) {
+    header.closest('.group-card').classList.toggle('open');
+  }
+
+  // ── Sub-Issue Expand/Collapse ──
+  function toggleSub(el) {
+    el.classList.toggle('expanded');
+  }
+
+  // ── Search: Taxonomy ──
+  function filterTaxonomy() {
+    const q = document.getElementById('tax-search').value.toLowerCase();
+    document.querySelectorAll('.group-card').forEach(gc => {
+      let groupMatch = false;
+      gc.querySelectorAll('.sub-issue').forEach(si => {
+        const text = si.textContent.toLowerCase();
+        const match = !q || text.includes(q);
+        si.style.display = match ? '' : 'none';
+        if (match) groupMatch = true;
+      });
+      gc.style.display = groupMatch || !q ? '' : 'none';
+      if (q && groupMatch) gc.classList.add('open');
+    });
+  }
+
+  // ── Search: Error Codes ──
+  function filterErrors() {
+    const q = document.getElementById('err-search').value.toLowerCase();
+    document.querySelectorAll('#error-table tbody tr').forEach(tr => {
+      tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  // ── Search: Incident Log ──
+  function filterLog() {
+    const q = document.getElementById('log-search').value.toLowerCase();
+    document.querySelectorAll('#log-table tbody tr').forEach(tr => {
+      tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  // ── Search: Glossary ──
+  function filterGlossary() {
+    const q = document.getElementById('gloss-search').value.toLowerCase();
+    document.querySelectorAll('#glossary-grid .gloss-card').forEach(gc => {
+      gc.style.display = !q || gc.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+</script>
+
+</body>
+</html>
