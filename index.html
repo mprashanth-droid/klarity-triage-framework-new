@@ -8,19 +8,19 @@
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
   :root {
-    --nightfall:   #000e4f;
-    --ocean:       #488cff;
-    --poppy:       #e87937;
-    --clay:        #ae5833;
-    --sky:         #afccfd;
-    --light-sky:   #e7eef8;
-    --light-sky20: #eff2f7;
-    --yellow:      #f5c253;
-    --cloud:       #fffcf6;
-    --black:       #0f131b;
+    --nightfall:   #131514;
+    --ocean:       #FF6C14;
+    --poppy:       #FF6C14;
+    --clay:        #E8467C;
+    --sky:         #FFF8F3;
+    --light-sky:   #F8F6F1;
+    --light-sky20: #F0EDE8;
+    --yellow:      #FDCD01;
+    --cloud:       #FFFDF5;
+    --black:       #111111;
     --white:       #ffffff;
-    --muted:       #6b7280;
-    --border:      #dde3ef;
+    --muted:       #555555;
+    --border:      #E8E4DC;
     --green-bg: #d1fae5; --green-txt: #065f46;
     --amber-bg: #fef3c7; --amber-txt: #92400e;
     --red-bg:   #fee2e2; --red-txt:   #991b1b;
@@ -48,7 +48,7 @@
   .header-wave {
     position: absolute; top: 0; right: 0;
     width: 55%; height: 100%;
-    background: linear-gradient(135deg, var(--nightfall) 0%, #1a2a7a 40%, #c06a3a 75%, var(--poppy) 100%);
+    background: linear-gradient(135deg, var(--nightfall) 0%, #2a2320 40%, #8B3A10 75%, var(--poppy) 100%);
     clip-path: polygon(18% 0%, 100% 0%, 100% 100%, 0% 100%);
     opacity: 0.7;
   }
@@ -114,7 +114,7 @@
     font-size: 13px; background: var(--white);
     outline: none; transition: border 0.15s;
   }
-  .search-wrap input:focus { border-color: var(--ocean); }
+  .search-wrap input:focus { border-color: #FF6C14; box-shadow: 0 0 0 3px rgba(255,108,20,0.1); }
   .search-wrap::before {
     content: '🔍'; position: absolute; left: 12px; top: 50%;
     transform: translateY(-50%); font-size: 14px; opacity: 0.5;
@@ -156,7 +156,7 @@
     cursor: pointer; transition: background 0.12s;
   }
   .sub-issue:hover { background: var(--light-sky20); }
-  .sub-issue.expanded { background: var(--white); border-color: var(--ocean); }
+  .sub-issue.expanded { background: var(--white); border-color: #FF6C14; }
   .sub-header {
     display: flex; align-items: center; gap: 10px;
   }
@@ -178,7 +178,7 @@
     display: block; margin: 6px 0; color: #7f1d1d; word-break: break-all;
   }
   .sub-detail .evidence {
-    background: #eff6ff; border-left: 3px solid var(--ocean);
+    background: #FFF8F3; border-left: 3px solid var(--ocean);
     padding: 8px 12px; border-radius: 0 6px 6px 0;
     margin: 8px 0; font-size: 12px;
   }
@@ -203,7 +203,7 @@
     padding: 10px 14px; border-bottom: 1px solid var(--border);
     vertical-align: top;
   }
-  .err-table tbody tr:hover { background: #f0f5ff; }
+  .err-table tbody tr:hover { background: #FFF8F3; }
   .err-table .err-raw {
     font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px;
     color: #991b1b; word-break: break-word; max-width: 360px;
